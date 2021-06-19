@@ -130,10 +130,13 @@ public class Client {
 	}
 
 	public void sendChat() {
-		try {
-			this.messageTransceiver.send(new PlayerChatMessage(this.playerId, this.chatBuffer.toString()));
-		} catch (IOException e) {
-			e.printStackTrace();
+		String message = this.chatBuffer.toString().trim();
+		if (!message.isBlank()) {
+			try {
+				this.messageTransceiver.send(new PlayerChatMessage(this.playerId, message));
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
 		}
 		this.setChatting(false);
 	}

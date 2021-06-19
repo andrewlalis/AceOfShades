@@ -13,6 +13,7 @@ public class PlayerControlState implements Serializable {
 	boolean movingBackward;
 
 	boolean shooting;
+	boolean reloading;
 
 	Vec2 mouseLocation;
 
@@ -62,6 +63,14 @@ public class PlayerControlState implements Serializable {
 
 	public void setShooting(boolean shooting) {
 		this.shooting = shooting;
+	}
+
+	public boolean isReloading() {
+		return reloading;
+	}
+
+	public void setReloading(boolean reloading) {
+		this.reloading = reloading;
 	}
 
 	public Vec2 getMouseLocation() {

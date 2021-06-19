@@ -116,10 +116,16 @@ public class WorldUpdater extends Thread {
 	}
 
 	private void updatePlayerShooting(Player p) {
-		if (p.getState().isShooting() && p.getLastShot() + Player.SHOT_COOLDOWN * 1000 < System.currentTimeMillis()) {
+		if (p.canUseWeapon()) {
 			this.world.getBullets().add(new Bullet(p));
 			this.world.getSoundsToPlay().add("ak47shot1.wav");
-			p.updateLastShot();
+			p.useWeapon();
+		}
+		if (p.getState().isReloading() && !p.isReloading() && p.getGun().canReload()) {
+			p.startReloading();
+		}
+		if (p.isReloading() && p.isReloadingComplete()) {
+			p.finishReloading();
 		}
 	}
 

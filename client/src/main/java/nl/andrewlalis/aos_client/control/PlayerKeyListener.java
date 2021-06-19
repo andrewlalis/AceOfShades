@@ -14,9 +14,11 @@ public class PlayerKeyListener extends KeyAdapter {
 
 	@Override
 	public void keyTyped(KeyEvent e) {
-		if (!this.client.isChatting() && (e.getKeyChar() == 't' || e.getKeyChar() == '/')) {
-			this.client.setChatting(true);
-			if (e.getKeyChar() == '/') this.client.appendToChat('/');
+		if (!this.client.isChatting()) {
+			if ((e.getKeyChar() == 't' || e.getKeyChar() == '/')) {
+				this.client.setChatting(true);
+				if (e.getKeyChar() == '/') this.client.appendToChat('/');
+			}
 		} else if (this.client.isChatting()) {
 			char c = e.getKeyChar();
 			if (c >= ' ' && c <= '~') {
@@ -43,6 +45,8 @@ public class PlayerKeyListener extends KeyAdapter {
 			state.setMovingLeft(true);
 		} else if (e.getKeyCode() == KeyEvent.VK_D) {
 			state.setMovingRight(true);
+		} else if (e.getKeyCode() == KeyEvent.VK_R) {
+			state.setReloading(true);
 		}
 		this.client.sendPlayerState();
 	}
@@ -59,6 +63,8 @@ public class PlayerKeyListener extends KeyAdapter {
 			state.setMovingLeft(false);
 		} else if (e.getKeyCode() == KeyEvent.VK_D) {
 			state.setMovingRight(false);
+		} else if (e.getKeyCode() == KeyEvent.VK_R) {
+			state.setReloading(false);
 		}
 		this.client.sendPlayerState();
 	}

@@ -2,6 +2,7 @@ package nl.andrewlalis.aos_client.view;
 
 import nl.andrewlalis.aos_client.Client;
 import nl.andrewlalis.aos_core.model.*;
+import nl.andrewlalis.aos_core.model.tools.Gun;
 import nl.andrewlalis.aos_core.net.chat.ChatMessage;
 import nl.andrewlalis.aos_core.net.chat.PlayerChatMessage;
 import nl.andrewlalis.aos_core.net.chat.SystemChatMessage;
@@ -48,6 +49,7 @@ public class GamePanel extends JPanel {
 		World world = client.getWorld();
 		if (world != null) drawWorld(g2, world);
 		drawChat(g2, world);
+		drawStatus(g2, world);
 	}
 
 	private void drawWorld(Graphics2D g2, World world) {
@@ -176,5 +178,18 @@ public class GamePanel extends JPanel {
 			g2.setColor(Color.WHITE);
 			g2.drawString("> " + this.client.getCurrentChatBuffer(), 5, height * 11);
 		}
+	}
+
+	private void drawStatus(Graphics2D g2, World world) {
+		Player myPlayer = world.getPlayers().get(this.client.getPlayerId());
+		if (myPlayer == null) return;
+
+		g2.setColor(Color.WHITE);
+		if (myPlayer.isReloading()) {
+			g2.drawString("Reloading...", 5, this.getHeight() - 10);
+		}
+		Gun gun = myPlayer.getGun();
+		g2.drawString("Clips: " + gun.getClipCount() + " / " + gun.getMaxClipCount(), 5, this.getHeight() - 20);
+		g2.drawString("Bullets: " + gun.getCurrentClipBulletCount() + " / " + gun.getClipSize(), 5, this.getHeight() - 30);
 	}
 }
