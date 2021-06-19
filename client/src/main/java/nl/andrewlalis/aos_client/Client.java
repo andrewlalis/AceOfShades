@@ -2,7 +2,6 @@ package nl.andrewlalis.aos_client;
 
 import nl.andrewlalis.aos_client.view.GameFrame;
 import nl.andrewlalis.aos_client.view.GamePanel;
-import nl.andrewlalis.aos_core.model.Player;
 import nl.andrewlalis.aos_core.model.PlayerControlState;
 import nl.andrewlalis.aos_core.model.World;
 import nl.andrewlalis.aos_core.net.PlayerControlStateMessage;
@@ -151,18 +150,18 @@ public class Client {
 
 
 	public static void main(String[] args) {
-//		String hostAndPort = JOptionPane.showInputDialog("Enter server host and port (host:port):");
-//		if (hostAndPort == null) throw new IllegalArgumentException("A host and port is required.");
-//		String[] parts = hostAndPort.split(":");
-//		if (parts.length != 2) throw new IllegalArgumentException("Invalid host:port.");
-//		String host = parts[0].trim();
-//		int port = Integer.parseInt(parts[1]);
-//		String username = JOptionPane.showInputDialog("Enter a username:");
-//		if (username == null || username.isBlank()) throw new IllegalArgumentException("Username is required.");
+		String hostAndPort = JOptionPane.showInputDialog("Enter server host and port (host:port):");
+		if (hostAndPort == null) throw new IllegalArgumentException("A host and port is required.");
+		String[] parts = hostAndPort.split(":");
+		if (parts.length != 2) throw new IllegalArgumentException("Invalid host:port.");
+		String host = parts[0].trim();
+		int port = Integer.parseInt(parts[1]);
+		String username = JOptionPane.showInputDialog("Enter a username:");
+		if (username == null || username.isBlank()) throw new IllegalArgumentException("Username is required.");
 
 		Client client = new Client();
 		try {
-			client.connect("localhost", 8035, "andrew");
+			client.connect(host, port, username);
 		} catch (IOException | ClassNotFoundException e) {
 			client.shutdown();
 			e.printStackTrace();
