@@ -5,7 +5,7 @@ import nl.andrewlalis.aos_core.model.Barricade;
 import nl.andrewlalis.aos_core.model.Bullet;
 import nl.andrewlalis.aos_core.model.Player;
 import nl.andrewlalis.aos_core.model.World;
-import nl.andrewlalis.aos_core.net.ChatMessage;
+import nl.andrewlalis.aos_core.net.chat.SystemChatMessage;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -155,7 +155,7 @@ public class WorldUpdater extends Thread {
 				double dist = p.getPosition().dist(new Vec2(x1 + n * (x2 - x1), y1 + n * (y2 - y1)));
 				if (dist < Player.RADIUS) {
 					Player killer = this.world.getPlayers().get(b.getPlayerId());
-					this.server.broadcastMessage(new ChatMessage(p.getName() + " was shot by " + killer.getName() + "."));
+					this.server.broadcastMessage(new SystemChatMessage(SystemChatMessage.Level.SEVERE, p.getName() + " was shot by " + killer.getName() + "."));
 					world.getSoundsToPlay().add("death.wav");
 					if (p.getTeam() != null) {
 						p.setPosition(p.getTeam().getSpawnPoint());

@@ -2,6 +2,9 @@ package nl.andrewlalis.aos_client.view;
 
 import nl.andrewlalis.aos_client.Client;
 import nl.andrewlalis.aos_core.model.*;
+import nl.andrewlalis.aos_core.net.chat.ChatMessage;
+import nl.andrewlalis.aos_core.net.chat.PlayerChatMessage;
+import nl.andrewlalis.aos_core.net.chat.SystemChatMessage;
 
 import javax.swing.*;
 import java.awt.*;
@@ -44,7 +47,7 @@ public class GamePanel extends JPanel {
 
 		World world = client.getWorld();
 		if (world != null) drawWorld(g2, world);
-		drawChat(g2, client.getLatestChatMessages());
+		drawChat(g2, world);
 	}
 
 	private void drawWorld(Graphics2D g2, World world) {
@@ -142,16 +145,35 @@ public class GamePanel extends JPanel {
 		}
 	}
 
-	private void drawChat(Graphics2D g2, String[] messages) {
+	private void drawChat(Graphics2D g2, World world) {
 		int height = g2.getFontMetrics().getHeight();
 		int y = height;
-		g2.setColor(Color.WHITE);
-		for (String message : messages) {
-			g2.drawString(message, 5, y);
+		for (ChatMessage message : this.client.getLatestChatMessages()) {
+			Color color = Color.WHITE;
+			String text = message.getText();
+			if (message instanceof SystemChatMessage sysMsg) {
+				if (sysMsg.getLevel() == SystemChatMessage.Level.INFO) {
+					color = Color.YELLOW;
+				} else if (sysMsg.getLevel() == SystemChatMessage.Level.WARNING) {
+					color = Color.ORANGE;
+				} else if (sysMsg.getLevel() == SystemChatMessage.Level.SEVERE) {
+					color = Color.RED;
+				}
+			} else if (message instanceof PlayerChatMessage pcm) {
+				String author = Integer.toString(pcm.getPlayerId());
+				if (world != null) {
+					Player p = world.getPlayers().get(pcm.getPlayerId());
+					if (p != null) author = p.getName();
+				}
+				text = author + ": " + text;
+			}
+			g2.setColor(color);
+			g2.drawString(text, 5, y);
 			y += height;
 		}
 
 		if (this.client.isChatting()) {
+			g2.setColor(Color.WHITE);
 			g2.drawString("> " + this.client.getCurrentChatBuffer(), 5, height * 11);
 		}
 	}

@@ -1,12 +1,15 @@
 package nl.andrewlalis.aos_client;
 
+import nl.andrewlalis.aos_core.model.World;
 import nl.andrewlalis.aos_core.net.*;
+import nl.andrewlalis.aos_core.net.chat.ChatMessage;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.net.InetAddress;
+import java.io.StreamCorruptedException;
 import java.net.Socket;
+import java.net.SocketException;
 
 /**
  * This thread is responsible for handling TCP message communication with the
@@ -25,11 +28,12 @@ public class MessageTransceiver extends Thread {
 		this.client = client;
 	}
 
-	public void connectToServer(String serverHost, int serverPort, String username, int udpPort) throws IOException, ClassNotFoundException {
+	public void connectToServer(String serverHost, int serverPort, String username) throws IOException {
 		this.socket = new Socket(serverHost, serverPort);
 		this.out = new ObjectOutputStream(this.socket.getOutputStream());
 		this.in = new ObjectInputStream(this.socket.getInputStream());
-		this.send(new IdentMessage(username, udpPort));
+		this.send(new IdentMessage(username));
+		System.out.println("Sent identification packet.");
 	}
 
 	public void shutdown() {
@@ -43,15 +47,8 @@ public class MessageTransceiver extends Thread {
 		}
 	}
 
-	public InetAddress getRemoteAddress() {
-		return this.socket != null ? this.socket.getInetAddress() : null;
-	}
-
-	public int getPort() {
-		return this.socket.getPort();
-	}
-
-	public void send(Message message) throws IOException {
+	public synchronized void send(Message message) throws IOException {
+		this.out.reset();
 		this.out.writeObject(message);
 	}
 
@@ -64,10 +61,20 @@ public class MessageTransceiver extends Thread {
 					PlayerRegisteredMessage prm = (PlayerRegisteredMessage) msg;
 					this.client.initPlayerData(prm.getPlayerId());
 				} else if (msg.getType() == Type.CHAT) {
-					this.client.addChatMessage(((ChatMessage) msg).getText());
+					this.client.addChatMessage((ChatMessage) msg);
+				} else if (msg.getType() == Type.WORLD_UPDATE) {
+					World world = ((WorldUpdateMessage) msg).getWorld();
+					this.client.setWorld(world);
+				}
+			} catch (StreamCorruptedException e) {
+				e.printStackTrace();
+				this.running = false;
+			} catch (SocketException e) {
+				if (!e.getMessage().equalsIgnoreCase("Socket closed")) {
+					e.printStackTrace();
 				}
 			} catch (IOException | ClassNotFoundException e) {
-				// Ignore exceptions.
+				e.printStackTrace();
 			}
 		}
 	}
