@@ -5,7 +5,7 @@ import nl.andrewlalis.aos_core.model.tools.Gun;
 
 import java.util.Objects;
 
-public class Player extends PhysicsObject {
+public class Player extends PhysicsObject implements Comparable<Player> {
 	public static final double MOVEMENT_SPEED = 10; // Movement speed, in m/s
 	public static final double RADIUS = 0.5; // Collision radius, in meters.
 	public static final double RESUPPLY_COOLDOWN = 30; // Seconds between allowing resupply.
@@ -145,5 +145,12 @@ public class Player extends PhysicsObject {
 	@Override
 	public int hashCode() {
 		return Objects.hash(getId());
+	}
+
+	@Override
+	public int compareTo(Player o) {
+		int r = this.name.compareTo(o.getName());
+		if (r == 0) return Integer.compare(this.id, o.getId());
+		return r;
 	}
 }

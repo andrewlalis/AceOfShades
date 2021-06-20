@@ -4,10 +4,7 @@ import nl.andrewlalis.aos_core.model.World;
 import nl.andrewlalis.aos_core.net.*;
 import nl.andrewlalis.aos_core.net.chat.ChatMessage;
 
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.StreamCorruptedException;
+import java.io.*;
 import java.net.Socket;
 import java.net.SocketException;
 
@@ -66,7 +63,7 @@ public class MessageTransceiver extends Thread {
 					World world = ((WorldUpdateMessage) msg).getWorld();
 					this.client.setWorld(world);
 				}
-			} catch (StreamCorruptedException e) {
+			} catch (StreamCorruptedException | EOFException e) {
 				e.printStackTrace();
 				this.running = false;
 			} catch (SocketException e) {

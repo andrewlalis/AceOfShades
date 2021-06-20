@@ -1,0 +1,16 @@
+Ace of Shades - Server CLI Help
+-------------------------------
+
+This command-line interface is used to issue commands while the server is
+running, to change the state of the game or configuration options, without
+having to restart.
+
+The following commands are available:
+
+stop            Stops the server, disconnecting all clients.
+reset           Resets the server by respawning all players and resets scores.
+help            Shows this help message.
+
+list            Show a list of all connected players.
+kick <p>        Kick a player with the given id or name. If more than one player
+                exists with a given name, you need to use their unique id.

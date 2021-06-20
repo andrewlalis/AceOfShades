@@ -1,6 +1,9 @@
 package nl.andrewlalis.aos_server;
 
-import nl.andrewlalis.aos_core.net.*;
+import nl.andrewlalis.aos_core.net.IdentMessage;
+import nl.andrewlalis.aos_core.net.Message;
+import nl.andrewlalis.aos_core.net.PlayerControlStateMessage;
+import nl.andrewlalis.aos_core.net.Type;
 import nl.andrewlalis.aos_core.net.chat.ChatMessage;
 
 import java.io.IOException;
@@ -10,6 +13,9 @@ import java.net.Socket;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+/**
+ * Thread which handles communicating with a single client socket connection.
+ */
 public class ClientHandler extends Thread {
 	private final ExecutorService sendingQueue = Executors.newSingleThreadExecutor();
 	private final Server server;
@@ -34,6 +40,13 @@ public class ClientHandler extends Thread {
 
 	public void shutdown() {
 		this.running = false;
+		try {
+			this.in.close();
+			this.out.close();
+			this.socket.close();
+		} catch (IOException e) {
+			System.err.println("Could not close streams when shutting down client handler for player " + this.playerId + ": " + e.getMessage());
+		}
 	}
 
 	public void send(Message message) {

@@ -14,6 +14,7 @@ import java.awt.*;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Scanner;
@@ -27,10 +28,14 @@ public class Server {
 	private final ServerSocket serverSocket;
 	private final World world;
 	private final WorldUpdater worldUpdater;
+	private final ServerCli cli;
+
+	private volatile boolean running;
 
 	public Server(int port) throws IOException {
 		this.clientHandlers = new CopyOnWriteArrayList<>();
 		this.serverSocket = new ServerSocket(port);
+		this.cli = new ServerCli(this);
 
 		this.world = new World(new Vec2(50, 70));
 		world.getBarricades().add(new Barricade(10, 10, 30, 5));
@@ -58,11 +63,22 @@ public class Server {
 		System.out.println("Started AOS-Server TCP on port " + port);
 	}
 
-	public void acceptClientConnection() throws IOException {
-		Socket socket = this.serverSocket.accept();
-		var t = new ClientHandler(this, socket);
-		t.start();
-		this.clientHandlers.add(t);
+	public World getWorld() {
+		return world;
+	}
+
+	public void acceptClientConnection() {
+		try {
+			Socket socket = this.serverSocket.accept();
+			var t = new ClientHandler(this, socket);
+			t.start();
+			this.clientHandlers.add(t);
+		} catch (IOException e) {
+			if (e instanceof SocketException && !this.running && e.getMessage().equalsIgnoreCase("Socket closed")) {
+				return; // Ignore this exception, since it is expected on shutdown.
+			}
+			e.printStackTrace();
+		}
 	}
 
 	public int registerNewPlayer(String name, ClientHandler handler) {
@@ -103,6 +119,15 @@ public class Server {
 		String message = player.getName() + " disconnected.";
 		this.broadcastMessage(new SystemChatMessage(SystemChatMessage.Level.INFO, message));
 		System.out.println(message);
+	}
+
+	public void kickPlayer(Player player) {
+		for (ClientHandler handler : this.clientHandlers) {
+			if (handler.getPlayerId() == player.getId()) {
+				handler.shutdown();
+				return;
+			}
+		}
 	}
 
 	public void sendWorldToClients() {
@@ -167,6 +192,32 @@ public class Server {
 		}
 	}
 
+	public void shutdown() {
+		this.running = false;
+		try {
+			this.serverSocket.close();
+			for (ClientHandler handler : this.clientHandlers) {
+				handler.shutdown();
+			}
+		} catch (IOException e) {
+			System.err.println("Could not close server socket on shutdown: " + e.getMessage());
+		}
+	}
+
+	public void run() {
+		this.running = true;
+		this.worldUpdater.start();
+		this.cli.start();
+		while (this.running) {
+			this.acceptClientConnection();
+		}
+		System.out.println("Stopped accepting new client connections.");
+		this.worldUpdater.shutdown();
+		System.out.println("Stopped world updater.");
+		this.cli.shutdown();
+		System.out.println("Stopped CLI interface.");
+	}
+
 
 
 	public static void main(String[] args) throws IOException {
@@ -184,9 +235,6 @@ public class Server {
 		}
 
 		Server server = new Server(port);
-		server.worldUpdater.start();
-		while (true) {
-			server.acceptClientConnection();
-		}
+		server.run();
 	}
 }
