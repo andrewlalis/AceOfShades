@@ -19,6 +19,8 @@ public class Team implements Serializable {
 
 	private final List<Player> players;
 
+	private int score;
+
 	public Team(String name, Color color, Vec2 spawnPoint, Vec2 supplyPoint, Vec2 orientation) {
 		this.name = name;
 		this.color = color;
@@ -26,6 +28,7 @@ public class Team implements Serializable {
 		this.supplyPoint = supplyPoint;
 		this.orientation = orientation;
 		this.players = new ArrayList<>();
+		this.score = 0;
 	}
 
 	public String getName() {
@@ -50,5 +53,17 @@ public class Team implements Serializable {
 
 	public List<Player> getPlayers() {
 		return players;
+	}
+
+	public int getScore() {
+		return score;
+	}
+
+	public void incrementScore() {
+		this.score++;
+	}
+
+	public void resetScore() {
+		this.score = 0;
 	}
 }

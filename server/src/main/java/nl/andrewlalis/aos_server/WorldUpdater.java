@@ -77,9 +77,12 @@ public class WorldUpdater extends Thread {
 		if (p.getState().isMovingBackward()) vy -= Player.MOVEMENT_SPEED;
 		if (p.getState().isMovingLeft()) vx -= Player.MOVEMENT_SPEED;
 		if (p.getState().isMovingRight()) vx += Player.MOVEMENT_SPEED;
-		Vec2 forwardVector = p.getOrientation().mul(vy);
-		Vec2 leftVector = p.getOrientation().perp().mul(vx);
-		Vec2 newPos = p.getPosition().add(forwardVector.mul(t)).add(leftVector.mul(t));
+		Vec2 forwardVector = new Vec2(0, -1);
+		if (p.getTeam() != null) {
+			forwardVector = p.getTeam().getOrientation();
+		}
+		Vec2 leftVector = forwardVector.perp();
+		Vec2 newPos = p.getPosition().add(forwardVector.mul(vy * t)).add(leftVector.mul(vx * t));
 		double nx = newPos.x();
 		double ny = newPos.y();
 
@@ -171,11 +174,18 @@ public class WorldUpdater extends Thread {
 				n = Math.max(Math.min(n, 1), 0);
 				double dist = p.getPosition().dist(new Vec2(x1 + n * (x2 - x1), y1 + n * (y2 - y1)));
 				if (dist < Player.RADIUS && (p.getTeam() == null || p.getTeam().getSpawnPoint().dist(p.getPosition()) > Team.SPAWN_RADIUS)) {
-					Player killer = this.world.getPlayers().get(b.getPlayerId());
-					this.server.broadcastMessage(new SystemChatMessage(SystemChatMessage.Level.SEVERE, p.getName() + " was shot by " + killer.getName() + "."));
-					world.getSoundsToPlay().add("death.wav");
-					if (p.getTeam() != null) {
-						p.setPosition(p.getTeam().getSpawnPoint());
+
+					// Player was shot!
+					float damage = (float) (((Player.RADIUS - dist) / Player.RADIUS) * b.getGun().getBaseDamage());
+					p.takeDamage(damage);
+					if (p.getHealth() == 0.0f) {
+						Player shooter = this.world.getPlayers().get(b.getPlayerId());
+						this.server.broadcastMessage(new SystemChatMessage(SystemChatMessage.Level.SEVERE, p.getName() + " was shot by " + shooter.getName() + "."));
+						world.getSoundsToPlay().add("death.wav");
+						if (shooter.getTeam() != null) {
+							shooter.getTeam().incrementScore();
+						}
+						p.respawn();
 					}
 				}
 			}

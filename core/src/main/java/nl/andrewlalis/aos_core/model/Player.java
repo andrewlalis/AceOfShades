@@ -1,5 +1,6 @@
 package nl.andrewlalis.aos_core.model;
 
+import nl.andrewlalis.aos_core.geom.Vec2;
 import nl.andrewlalis.aos_core.model.tools.Gun;
 
 import java.util.Objects;
@@ -8,12 +9,14 @@ public class Player extends PhysicsObject {
 	public static final double MOVEMENT_SPEED = 10; // Movement speed, in m/s
 	public static final double RADIUS = 0.5; // Collision radius, in meters.
 	public static final double RESUPPLY_COOLDOWN = 30; // Seconds between allowing resupply.
+	public static final float MAX_HEALTH = 100.0f;
 
 	private final int id;
 	private final String name;
 	private Team team;
 	private PlayerControlState state;
 	private Gun gun;
+	private float health;
 
 	private transient long lastShot;
 	private transient long reloadingStartedAt;
@@ -27,6 +30,7 @@ public class Player extends PhysicsObject {
 		this.state = new PlayerControlState();
 		this.state.setPlayerId(this.id);
 		this.gun = Gun.winchester();
+		this.health = MAX_HEALTH;
 		this.useWeapon();
 	}
 
@@ -111,6 +115,23 @@ public class Player extends PhysicsObject {
 	public void resupply() {
 		this.lastResupply = System.currentTimeMillis();
 		this.gun.refillClips();
+		this.health = MAX_HEALTH;
+	}
+
+	public float getHealth() {
+		return health;
+	}
+
+	public void takeDamage(float damage) {
+		this.health = Math.max(this.health - damage, 0.0f);
+	}
+
+	public void respawn() {
+		this.resupply();
+		this.gun.emptyCurrentClip();
+		if (this.team != null) {
+			this.setPosition(this.team.getSpawnPoint().add(Vec2.random(-Team.SPAWN_RADIUS / 2, Team.SPAWN_RADIUS / 2)));
+		}
 	}
 
 	@Override

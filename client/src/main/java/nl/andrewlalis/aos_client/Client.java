@@ -1,5 +1,6 @@
 package nl.andrewlalis.aos_client;
 
+import nl.andrewlalis.aos_client.view.ConnectDialog;
 import nl.andrewlalis.aos_client.view.GameFrame;
 import nl.andrewlalis.aos_client.view.GamePanel;
 import nl.andrewlalis.aos_core.model.PlayerControlState;
@@ -8,7 +9,6 @@ import nl.andrewlalis.aos_core.net.PlayerControlStateMessage;
 import nl.andrewlalis.aos_core.net.chat.ChatMessage;
 import nl.andrewlalis.aos_core.net.chat.PlayerChatMessage;
 
-import javax.swing.*;
 import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
@@ -153,22 +153,7 @@ public class Client {
 
 
 	public static void main(String[] args) {
-		String hostAndPort = JOptionPane.showInputDialog("Enter server host and port (host:port):");
-		if (hostAndPort == null) throw new IllegalArgumentException("A host and port is required.");
-		String[] parts = hostAndPort.split(":");
-		if (parts.length != 2) throw new IllegalArgumentException("Invalid host:port.");
-		String host = parts[0].trim();
-		int port = Integer.parseInt(parts[1]);
-		String username = JOptionPane.showInputDialog("Enter a username:");
-		if (username == null || username.isBlank()) throw new IllegalArgumentException("Username is required.");
-
-		Client client = new Client();
-		try {
-			client.connect(host, port, username);
-		} catch (IOException | ClassNotFoundException e) {
-			client.shutdown();
-			e.printStackTrace();
-			JOptionPane.showMessageDialog(null, "Could not connect:\n" + e.getMessage(), "Connection Error", JOptionPane.WARNING_MESSAGE);
-		}
+		ConnectDialog dialog = new ConnectDialog();
+		dialog.setVisible(true);
 	}
 }

@@ -1,6 +1,8 @@
 package nl.andrewlalis.aos_core.geom;
 
 import java.io.Serializable;
+import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 
 public record Vec2(double x, double y) implements Serializable {
 
@@ -55,5 +57,12 @@ public record Vec2(double x, double y) implements Serializable {
 	@Override
 	public String toString() {
 		return "[ " + x + ", " + y + " ]";
+	}
+
+	public static Vec2 random(double min, double max) {
+		Random r = ThreadLocalRandom.current();
+		double x = r.nextDouble() * (max - min) + min;
+		double y = r.nextDouble() * (max - min) + min;
+		return new Vec2(x, y);
 	}
 }

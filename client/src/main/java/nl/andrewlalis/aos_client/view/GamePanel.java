@@ -48,9 +48,11 @@ public class GamePanel extends JPanel {
 		g2.clearRect(0, 0, this.getWidth(), this.getHeight());
 
 		World world = client.getWorld();
-		if (world != null) drawWorld(g2, world);
+		if (world != null) {
+			drawWorld(g2, world);
+			drawStatus(g2, world);
+		}
 		drawChat(g2, world);
-		drawStatus(g2, world);
 	}
 
 	private void drawWorld(Graphics2D g2, World world) {
@@ -234,5 +236,20 @@ public class GamePanel extends JPanel {
 		Gun gun = myPlayer.getGun();
 		g2.drawString("Clips: " + gun.getClipCount() + " / " + gun.getMaxClipCount(), 5, this.getHeight() - 20);
 		g2.drawString("Bullets: " + gun.getCurrentClipBulletCount() + " / " + gun.getClipSize(), 5, this.getHeight() - 30);
+		if (myPlayer.getHealth() >= 66.0f) {
+			g2.setColor(Color.GREEN);
+		} else if (myPlayer.getHealth() >= 33.0f) {
+			g2.setColor(Color.YELLOW);
+		} else {
+			g2.setColor(Color.RED);
+		}
+		g2.drawString(String.format("Health: %.1f / %.1f", myPlayer.getHealth(), Player.MAX_HEALTH), 5, this.getHeight() - 40);
+
+		int y = this.getHeight() - 60;
+		for (Team t : world.getTeams()) {
+			g2.setColor(t.getColor());
+			g2.drawString("Team " + t.getName() + ": " + t.getScore(), 5, y);
+			y -= 15;
+		}
 	}
 }

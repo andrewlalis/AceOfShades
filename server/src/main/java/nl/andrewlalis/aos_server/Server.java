@@ -118,6 +118,15 @@ public class Server {
 		}
 	}
 
+	public void resetGame() {
+		for (Team t : this.world.getTeams()) {
+			t.resetScore();
+			for (Player p : t.getPlayers()) {
+				p.respawn();
+			}
+		}
+	}
+
 	public void broadcastMessage(Message message) {
 		for (ClientHandler handler : this.clientHandlers) {
 			handler.send(message);
@@ -152,6 +161,9 @@ public class Server {
 				player.setGun(Gun.winchester());
 			}
 			handler.send(new SystemChatMessage(SystemChatMessage.Level.INFO, "Changed gun to " + player.getGun().getType().name() + "."));
+		} else if (command.equalsIgnoreCase("reset")) {
+			this.resetGame();
+			this.broadcastMessage(new SystemChatMessage(SystemChatMessage.Level.INFO, "Game has been reset."));
 		}
 	}
 
