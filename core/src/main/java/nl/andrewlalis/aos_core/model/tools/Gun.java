@@ -16,6 +16,12 @@ public class Gun implements Serializable {
 	private final int clipSize;
 
 	/**
+	 * Number of bullets that are fired simultaneously per round. Usually only
+	 * shotguns fire multiple.
+	 */
+	private final int bulletsPerRound;
+
+	/**
 	 * How accurate shots from this gun are.
 	 */
 	private final double accuracy;
@@ -44,10 +50,11 @@ public class Gun implements Serializable {
 	 */
 	private int clipCount;
 
-	private Gun(GunType type, int maxClipCount, int clipSize, double accuracy, double shotCooldownTime, double reloadTime, double bulletSpeed) {
+	private Gun(GunType type, int maxClipCount, int clipSize, int bulletsPerRound, double accuracy, double shotCooldownTime, double reloadTime, double bulletSpeed) {
 		this.type = type;
 		this.maxClipCount = maxClipCount;
 		this.clipSize = clipSize;
+		this.bulletsPerRound = bulletsPerRound;
 		this.accuracy = accuracy;
 		this.shotCooldownTime = shotCooldownTime;
 		this.reloadTime = reloadTime;
@@ -67,6 +74,10 @@ public class Gun implements Serializable {
 
 	public int getClipSize() {
 		return clipSize;
+	}
+
+	public int getBulletsPerRound() {
+		return bulletsPerRound;
 	}
 
 	public double getAccuracy() {
@@ -93,6 +104,10 @@ public class Gun implements Serializable {
 		return clipCount;
 	}
 
+	public void refillClips() {
+		this.clipCount = this.maxClipCount;
+	}
+
 	public void decrementBulletCount() {
 		this.currentClipBulletCount = Math.max(this.currentClipBulletCount - 1, 0);
 	}
@@ -109,14 +124,14 @@ public class Gun implements Serializable {
 	}
 
 	public static Gun ak47() {
-		return new Gun(GunType.SMG, 4, 30, 0.10, 0.05, 1.2, 90);
+		return new Gun(GunType.SMG, 4, 30, 1, 0.10, 0.05, 1.2, 90);
 	}
 
 	public static Gun m1Garand() {
-		return new Gun(GunType.RIFLE, 6, 8, 0.02, 0.75, 1.5, 150);
+		return new Gun(GunType.RIFLE, 6, 8, 1, 0.02, 0.75, 1.5, 150);
 	}
 
 	public static Gun winchester() {
-		return new Gun(GunType.SHOTGUN, 8, 4, 0.15, 0.5, 2.0, 75);
+		return new Gun(GunType.SHOTGUN, 8, 4, 3, 0.15, 0.5, 2.0, 75);
 	}
 }

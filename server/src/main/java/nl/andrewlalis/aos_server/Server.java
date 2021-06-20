@@ -2,6 +2,7 @@ package nl.andrewlalis.aos_server;
 
 import nl.andrewlalis.aos_core.geom.Vec2;
 import nl.andrewlalis.aos_core.model.*;
+import nl.andrewlalis.aos_core.model.tools.Gun;
 import nl.andrewlalis.aos_core.net.Message;
 import nl.andrewlalis.aos_core.net.PlayerRegisteredMessage;
 import nl.andrewlalis.aos_core.net.WorldUpdateMessage;
@@ -13,6 +14,7 @@ import java.awt.*;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Scanner;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -37,8 +39,20 @@ public class Server {
 		world.getBarricades().add(new Barricade(0, 30, 10, 10));
 		world.getBarricades().add(new Barricade(40, 30, 10, 10));
 
-		world.getTeams().add(new Team("Red", Color.RED, new Vec2(3, 3), new Vec2(0, 1)));
-		world.getTeams().add(new Team("Blue", Color.BLUE, new Vec2(world.getSize().x() - 3, world.getSize().y() - 3), new Vec2(0, -1)));
+		world.getTeams().add(new Team(
+			"Red",
+			Color.RED,
+			new Vec2(3, 3),
+			new Vec2(15, 3),
+			new Vec2(0, 1)
+		));
+		world.getTeams().add(new Team(
+			"Blue",
+			Color.BLUE,
+			new Vec2(world.getSize().x() - 3, world.getSize().y() - 3),
+			new Vec2(world.getSize().x() - 15, world.getSize().y() - 3),
+			new Vec2(0, -1)
+		));
 
 		this.worldUpdater = new WorldUpdater(this, this.world);
 		System.out.println("Started AOS-Server TCP on port " + port);
@@ -63,11 +77,7 @@ public class Server {
 		}
 		Player p = new Player(id, name, team);
 		this.world.getPlayers().put(p.getId(), p);
-		try {
-			handler.send(new PlayerRegisteredMessage(id));
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+		handler.send(new PlayerRegisteredMessage(id));
 		String message = p.getName() + " connected.";
 		this.broadcastMessage(new SystemChatMessage(SystemChatMessage.Level.INFO, message));
 		System.out.println(message);
@@ -97,11 +107,7 @@ public class Server {
 
 	public void sendWorldToClients() {
 		for (ClientHandler handler : this.clientHandlers) {
-			try {
-				handler.send(new WorldUpdateMessage(this.world));
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
+			handler.send(new WorldUpdateMessage(this.world));
 		}
 	}
 
@@ -114,18 +120,39 @@ public class Server {
 
 	public void broadcastMessage(Message message) {
 		for (ClientHandler handler : this.clientHandlers) {
-			try {
-				handler.send(message);
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
+			handler.send(message);
 		}
 	}
 
-	public void broadcastPlayerChat(int playerId, ChatMessage msg) {
+	public void handlePlayerChat(ClientHandler handler, int playerId, ChatMessage msg) {
 		Player p = this.world.getPlayers().get(playerId);
 		if (p == null) return;
-		this.broadcastMessage(new PlayerChatMessage(p.getId(), msg.getText()));
+		if (msg.getText().startsWith("/")) {
+			String[] words = msg.getText().substring(1).split("\\s+");
+			if (words.length == 0) return;
+			String command = words[0];
+			String[] args = Arrays.copyOfRange(words, 1, words.length);
+			this.handleCommand(handler, p, command, args);
+		} else {
+			this.broadcastMessage(new PlayerChatMessage(p.getId(), msg.getText()));
+		}
+	}
+
+	public void handleCommand(ClientHandler handler, Player player, String command, String[] args) {
+		if (command.equalsIgnoreCase("gun")) {
+			if (args.length < 1) {
+				return;
+			}
+			String gunName = args[0];
+			if (gunName.equalsIgnoreCase("smg")) {
+				player.setGun(Gun.ak47());
+			} else if (gunName.equalsIgnoreCase("rifle")) {
+				player.setGun(Gun.m1Garand());
+			} else if (gunName.equalsIgnoreCase("shotgun")) {
+				player.setGun(Gun.winchester());
+			}
+			handler.send(new SystemChatMessage(SystemChatMessage.Level.INFO, "Changed gun to " + player.getGun().getType().name() + "."));
+		}
 	}
 
 

@@ -7,6 +7,7 @@ import java.util.Objects;
 public class Player extends PhysicsObject {
 	public static final double MOVEMENT_SPEED = 10; // Movement speed, in m/s
 	public static final double RADIUS = 0.5; // Collision radius, in meters.
+	public static final double RESUPPLY_COOLDOWN = 30; // Seconds between allowing resupply.
 
 	private final int id;
 	private final String name;
@@ -17,6 +18,7 @@ public class Player extends PhysicsObject {
 	private transient long lastShot;
 	private transient long reloadingStartedAt;
 	private boolean reloading;
+	private transient long lastResupply;
 
 	public Player(int id, String name, Team team) {
 		this.id = id;
@@ -24,7 +26,7 @@ public class Player extends PhysicsObject {
 		this.team = team;
 		this.state = new PlayerControlState();
 		this.state.setPlayerId(this.id);
-		this.gun = Gun.m1Garand();
+		this.gun = Gun.winchester();
 		this.useWeapon();
 	}
 
@@ -69,7 +71,8 @@ public class Player extends PhysicsObject {
 			!this.state.isReloading() &&
 			!this.reloading &&
 			this.gun.getCurrentClipBulletCount() > 0 &&
-			this.lastShot + this.gun.getShotCooldownTime() * 1000 < System.currentTimeMillis();
+			this.lastShot + this.gun.getShotCooldownTime() * 1000 < System.currentTimeMillis() &&
+			(this.getTeam() == null || this.getTeam().getSpawnPoint().dist(this.getPosition()) > Team.SPAWN_RADIUS);
 	}
 
 	public void useWeapon() {
@@ -97,6 +100,17 @@ public class Player extends PhysicsObject {
 
 	public boolean isReloading() {
 		return reloading;
+	}
+
+	public boolean canResupply() {
+		return this.team != null &&
+			this.team.getSupplyPoint().dist(this.getPosition()) < Team.SUPPLY_POINT_RADIUS &&
+			System.currentTimeMillis() - this.lastResupply > RESUPPLY_COOLDOWN * 1000;
+	}
+
+	public void resupply() {
+		this.lastResupply = System.currentTimeMillis();
+		this.gun.refillClips();
 	}
 
 	@Override

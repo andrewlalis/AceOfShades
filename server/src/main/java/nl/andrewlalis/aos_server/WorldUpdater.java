@@ -1,10 +1,8 @@
 package nl.andrewlalis.aos_server;
 
 import nl.andrewlalis.aos_core.geom.Vec2;
-import nl.andrewlalis.aos_core.model.Barricade;
-import nl.andrewlalis.aos_core.model.Bullet;
-import nl.andrewlalis.aos_core.model.Player;
-import nl.andrewlalis.aos_core.model.World;
+import nl.andrewlalis.aos_core.model.*;
+import nl.andrewlalis.aos_core.model.tools.GunType;
 import nl.andrewlalis.aos_core.net.chat.SystemChatMessage;
 
 import java.util.ArrayList;
@@ -113,12 +111,24 @@ public class WorldUpdater extends Thread {
 		if (ny - Player.RADIUS < 0) ny = Player.RADIUS;
 		if (ny + Player.RADIUS > this.world.getSize().y()) ny = this.world.getSize().y() - Player.RADIUS;
 		p.setPosition(new Vec2(nx, ny));
+
+		if (p.canResupply()) {
+			p.resupply();
+		}
 	}
 
 	private void updatePlayerShooting(Player p) {
 		if (p.canUseWeapon()) {
-			this.world.getBullets().add(new Bullet(p));
-			this.world.getSoundsToPlay().add("ak47shot1.wav");
+			for (int i = 0; i < p.getGun().getBulletsPerRound(); i++) {
+				this.world.getBullets().add(new Bullet(p));
+			}
+			String sound = "ak47shot1.wav";
+			if (p.getGun().getType() == GunType.RIFLE) {
+				sound = "m1garand-shot1.wav";
+			} else if (p.getGun().getType() == GunType.SHOTGUN) {
+				sound = "shotgun-shot1.wav";
+			}
+			this.world.getSoundsToPlay().add(sound);
 			p.useWeapon();
 		}
 		if (p.getState().isReloading() && !p.isReloading() && p.getGun().canReload()) {
@@ -126,6 +136,7 @@ public class WorldUpdater extends Thread {
 		}
 		if (p.isReloading() && p.isReloadingComplete()) {
 			p.finishReloading();
+			this.world.getSoundsToPlay().add("reload.wav");
 		}
 	}
 
@@ -159,7 +170,7 @@ public class WorldUpdater extends Thread {
 				double n = ((p.getPosition().x() - x1) * (x2 - x1) + (p.getPosition().y() - y1) * (y2 - y1)) / lineDist;
 				n = Math.max(Math.min(n, 1), 0);
 				double dist = p.getPosition().dist(new Vec2(x1 + n * (x2 - x1), y1 + n * (y2 - y1)));
-				if (dist < Player.RADIUS) {
+				if (dist < Player.RADIUS && (p.getTeam() == null || p.getTeam().getSpawnPoint().dist(p.getPosition()) > Team.SPAWN_RADIUS)) {
 					Player killer = this.world.getPlayers().get(b.getPlayerId());
 					this.server.broadcastMessage(new SystemChatMessage(SystemChatMessage.Level.SEVERE, p.getName() + " was shot by " + killer.getName() + "."));
 					world.getSoundsToPlay().add("death.wav");

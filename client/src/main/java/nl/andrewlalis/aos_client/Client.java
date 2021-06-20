@@ -131,7 +131,7 @@ public class Client {
 
 	public void sendChat() {
 		String message = this.chatBuffer.toString().trim();
-		if (!message.isBlank()) {
+		if (!message.isBlank() && !message.equals("/")) {
 			try {
 				this.messageTransceiver.send(new PlayerChatMessage(this.playerId, message));
 			} catch (IOException e) {

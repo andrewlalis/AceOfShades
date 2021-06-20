@@ -7,8 +7,11 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class ClientHandler extends Thread {
+	private final ExecutorService sendingQueue = Executors.newSingleThreadExecutor();
 	private final Server server;
 	private final Socket socket;
 	private final ObjectOutputStream out;
@@ -33,9 +36,15 @@ public class ClientHandler extends Thread {
 		this.running = false;
 	}
 
-	public synchronized void send(Message message) throws IOException {
-		this.out.reset();
-		this.out.writeObject(message);
+	public void send(Message message) {
+		this.sendingQueue.submit(() -> {
+			try {
+				this.out.reset();
+				this.out.writeObject(message);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		});
 	}
 
 	@Override
@@ -48,7 +57,7 @@ public class ClientHandler extends Thread {
 						IdentMessage ident = (IdentMessage) msg;
 						this.playerId = this.server.registerNewPlayer(ident.getName(), this);
 					} else if (msg.getType() == Type.CHAT) {
-						this.server.broadcastPlayerChat(this.playerId, (ChatMessage) msg);
+						this.server.handlePlayerChat(this, this.playerId, (ChatMessage) msg);
 					} else if (msg.getType() == Type.PLAYER_CONTROL_STATE) {
 						this.server.updatePlayerState(((PlayerControlStateMessage) msg).getPlayerControlState());
 					}

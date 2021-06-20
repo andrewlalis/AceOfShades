@@ -3,6 +3,7 @@ package nl.andrewlalis.aos_client.view;
 import nl.andrewlalis.aos_client.Client;
 import nl.andrewlalis.aos_core.model.*;
 import nl.andrewlalis.aos_core.model.tools.Gun;
+import nl.andrewlalis.aos_core.model.tools.GunType;
 import nl.andrewlalis.aos_core.net.chat.ChatMessage;
 import nl.andrewlalis.aos_core.net.chat.PlayerChatMessage;
 import nl.andrewlalis.aos_core.net.chat.SystemChatMessage;
@@ -63,7 +64,21 @@ public class GamePanel extends JPanel {
 		this.drawField(g2, world);
 		this.drawPlayers(g2, world);
 		this.drawBullets(g2, world);
+		this.drawMarkers(g2, world, myPlayer);
+
 		g2.setTransform(pre);
+
+		// Put shadow gradient.
+		RadialGradientPaint p = new RadialGradientPaint(
+			this.getWidth() / 2.0f,
+			this.getHeight() / 2.0f,
+			(float) (25 * scale),
+			new float[]{0.0f, 1.0f},
+			new Color[]{new Color(0, 0, 0, 0), new Color(0, 0, 0, 255)},
+			MultipleGradientPaint.CycleMethod.NO_CYCLE
+		);
+		g2.setPaint(p);
+		g2.fillRect(0, 0, this.getWidth(), this.getHeight());
 	}
 
 	private AffineTransform getWorldTransform(Player player, double scale) {
@@ -97,12 +112,19 @@ public class GamePanel extends JPanel {
 		for (Team t : world.getTeams()) {
 			g2.setColor(t.getColor());
 			Ellipse2D.Double spawnCircle = new Ellipse2D.Double(
-				t.getSpawnPoint().x() - Player.RADIUS,
-				t.getSpawnPoint().y() - Player.RADIUS,
-				Player.RADIUS * 2,
-				Player.RADIUS * 2
+				t.getSpawnPoint().x() - Team.SPAWN_RADIUS,
+				t.getSpawnPoint().y() - Team.SPAWN_RADIUS,
+				Team.SPAWN_RADIUS * 2,
+				Team.SPAWN_RADIUS * 2
 			);
 			g2.draw(spawnCircle);
+			Rectangle2D.Double supplyMarker = new Rectangle2D.Double(
+				t.getSupplyPoint().x() - Team.SUPPLY_POINT_RADIUS,
+				t.getSupplyPoint().y() - Team.SUPPLY_POINT_RADIUS,
+				Team.SUPPLY_POINT_RADIUS * 2,
+				Team.SUPPLY_POINT_RADIUS * 2
+			);
+			g2.draw(supplyMarker);
 		}
 	}
 
@@ -110,7 +132,6 @@ public class GamePanel extends JPanel {
 		for (Player p : world.getPlayers().values()) {
 			AffineTransform pre = g2.getTransform();
 			AffineTransform tx = g2.getTransform();
-
 			tx.translate(p.getPosition().x(), p.getPosition().y());
 			tx.rotate(p.getOrientation().x(), p.getOrientation().y());
 			g2.setTransform(tx);
@@ -119,23 +140,30 @@ public class GamePanel extends JPanel {
 			Color playerColor = p.getTeam() != null ? p.getTeam().getColor() : Color.BLACK;
 			g2.setColor(playerColor);
 			g2.fill(dot);
-
-			g2.setColor(Color.GRAY);
-			Rectangle2D.Double gun = new Rectangle2D.Double(
-				0,
-				0.5,
-				2,
-				0.25
-			);
-			g2.fill(gun);
-
+			this.drawGun(g2, p.getGun());
 			g2.setTransform(pre);
 		}
 	}
 
+	private void drawGun(Graphics2D g2, Gun gun) {
+		g2.setColor(Color.GRAY);
+		if (gun.getType() == GunType.RIFLE) {
+			g2.setColor(new Color(59, 43, 0));
+		} else if (gun.getType() == GunType.SHOTGUN) {
+			g2.setColor(new Color(18, 18, 17));
+		}
+		Rectangle2D.Double gunBarrel = new Rectangle2D.Double(
+			0,
+			0.5,
+			2,
+			0.25
+		);
+		g2.fill(gunBarrel);
+	}
+
 	private void drawBullets(Graphics2D g2, World world) {
-		g2.setColor(Color.YELLOW);
-		double bulletSize = 0.5;
+		g2.setColor(Color.BLACK);
+		double bulletSize = 0.25;
 		for (Bullet b : world.getBullets()) {
 			Ellipse2D.Double bulletShape = new Ellipse2D.Double(
 				b.getPosition().x() - bulletSize / 2,
@@ -144,6 +172,21 @@ public class GamePanel extends JPanel {
 				bulletSize
 			);
 			g2.fill(bulletShape);
+		}
+	}
+
+	private void drawMarkers(Graphics2D g2, World world, Player myPlayer) {
+		g2.setColor(Color.WHITE);
+		for (Player p : world.getPlayers().values()) {
+			if (p.getId() == myPlayer.getId()) continue;
+			AffineTransform pre = g2.getTransform();
+			AffineTransform tx = g2.getTransform();
+			tx.translate(p.getPosition().x(), p.getPosition().y());
+			tx.rotate(myPlayer.getTeam().getOrientation().perp().angle());
+			tx.scale(0.1, 0.1);
+			g2.setTransform(tx);
+			g2.drawString(p.getName(), 0, 0);
+			g2.setTransform(pre);
 		}
 	}
 
