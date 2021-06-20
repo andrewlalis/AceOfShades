@@ -7,7 +7,7 @@
 	<groupId>nl.andrewlalis</groupId>
 	<artifactId>ace-of-shades</artifactId>
 	<packaging>pom</packaging>
-	<version>2.1</version>
+	<version>3.0</version>
 	<modules>
 		<module>server</module>
 		<module>client</module>
