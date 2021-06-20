@@ -36,8 +36,12 @@ public class Server {
 		this.clientHandlers = new CopyOnWriteArrayList<>();
 		this.serverSocket = new ServerSocket(port);
 		this.cli = new ServerCli(this);
-
 		this.world = new World(new Vec2(50, 70));
+		this.initWorld();
+		this.worldUpdater = new WorldUpdater(this, this.world);
+	}
+
+	private void initWorld() {
 		world.getBarricades().add(new Barricade(10, 10, 30, 5));
 		world.getBarricades().add(new Barricade(10, 55, 30, 5));
 		world.getBarricades().add(new Barricade(20, 30, 10, 10));
@@ -58,9 +62,6 @@ public class Server {
 			new Vec2(world.getSize().x() - 15, world.getSize().y() - 3),
 			new Vec2(0, -1)
 		));
-
-		this.worldUpdater = new WorldUpdater(this, this.world);
-		System.out.println("Started AOS-Server TCP on port " + port);
 	}
 
 	public World getWorld() {
@@ -208,6 +209,7 @@ public class Server {
 		this.running = true;
 		this.worldUpdater.start();
 		this.cli.start();
+		System.out.println("Started AOS-Server TCP on port " + this.serverSocket.getLocalPort() + "; now accepting connections.");
 		while (this.running) {
 			this.acceptClientConnection();
 		}
