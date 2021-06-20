@@ -50,6 +50,7 @@ public class ClientHandler extends Thread {
 	}
 
 	public void send(Message message) {
+		if (this.socket.isClosed()) return;
 		this.sendingQueue.submit(() -> {
 			try {
 				this.out.reset();

@@ -16,7 +16,7 @@ public class GameFrame extends JFrame {
 	public GameFrame(String title, Client client, GamePanel gamePanel) throws HeadlessException {
 		super(title);
 		this.setDefaultCloseOperation(DISPOSE_ON_CLOSE);
-		InputStream iconInputStream = GameFrame.class.getClassLoader().getResourceAsStream("icon.png");
+		InputStream iconInputStream = GameFrame.class.getClassLoader().getResourceAsStream("/nl/andrewlalis/aos_client/icon.png");
 		if (iconInputStream != null) {
 			try {
 				this.setIconImage(ImageIO.read(iconInputStream));

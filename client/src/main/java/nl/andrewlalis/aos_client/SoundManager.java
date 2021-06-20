@@ -21,7 +21,7 @@ public class SoundManager {
 	private Clip getClip(String sound) {
 		var soundBytes = this.soundData.get(sound);
 		if (soundBytes == null) {
-			InputStream is = Client.class.getResourceAsStream("/sound/" + sound);
+			InputStream is = Client.class.getResourceAsStream("/nl/andrewlalis/aos_client/sound/" + sound);
 			if (is == null) {
 				System.err.println("Could not load sound: " + sound);
 				return null;
