@@ -7,6 +7,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * The main game world, consisting of all players and other objects in the game.
@@ -24,8 +26,8 @@ public class World implements Serializable {
 	public World(Vec2 size) {
 		this.size = size;
 		this.teams = new ArrayList<>();
-		this.players = new HashMap<>();
-		this.bullets = new ArrayList<>();
+		this.players = new ConcurrentHashMap<>();
+		this.bullets = new CopyOnWriteArrayList<>();
 		this.barricades = new ArrayList<>();
 		this.soundsToPlay = new ArrayList<>();
 	}

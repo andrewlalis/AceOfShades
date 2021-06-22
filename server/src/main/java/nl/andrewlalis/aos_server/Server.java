@@ -2,20 +2,20 @@ package nl.andrewlalis.aos_server;
 
 import nl.andrewlalis.aos_core.geom.Vec2;
 import nl.andrewlalis.aos_core.model.*;
-import nl.andrewlalis.aos_core.model.tools.Gun;
 import nl.andrewlalis.aos_core.net.Message;
-import nl.andrewlalis.aos_core.net.PlayerRegisteredMessage;
-import nl.andrewlalis.aos_core.net.WorldUpdateMessage;
-import nl.andrewlalis.aos_core.net.chat.ChatMessage;
-import nl.andrewlalis.aos_core.net.chat.PlayerChatMessage;
+import nl.andrewlalis.aos_core.net.PlayerUpdateMessage;
+import nl.andrewlalis.aos_core.net.Type;
 import nl.andrewlalis.aos_core.net.chat.SystemChatMessage;
+import nl.andrewlalis.aos_core.net.data.DataTypes;
+import nl.andrewlalis.aos_core.net.data.PlayerDetailUpdate;
+import nl.andrewlalis.aos_core.net.data.WorldUpdate;
+import nl.andrewlalis.aos_core.util.ByteUtils;
 
 import java.awt.*;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Scanner;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -26,19 +26,23 @@ public class Server {
 
 	private final List<ClientHandler> clientHandlers;
 	private final ServerSocket serverSocket;
+	private final DataTransceiver dataTransceiver;
 	private final World world;
 	private final WorldUpdater worldUpdater;
 	private final ServerCli cli;
+	private final ChatManager chatManager;
 
 	private volatile boolean running;
 
 	public Server(int port) throws IOException {
 		this.clientHandlers = new CopyOnWriteArrayList<>();
 		this.serverSocket = new ServerSocket(port);
+		this.dataTransceiver = new DataTransceiver(this, port);
 		this.cli = new ServerCli(this);
 		this.world = new World(new Vec2(50, 70));
 		this.initWorld();
 		this.worldUpdater = new WorldUpdater(this, this.world);
+		this.chatManager = new ChatManager(this);
 	}
 
 	private void initWorld() {
@@ -68,6 +72,10 @@ public class Server {
 		return world;
 	}
 
+	public ChatManager getChatManager() {
+		return chatManager;
+	}
+
 	public void acceptClientConnection() {
 		try {
 			Socket socket = this.serverSocket.accept();
@@ -82,7 +90,7 @@ public class Server {
 		}
 	}
 
-	public int registerNewPlayer(String name, ClientHandler handler) {
+	public Player registerNewPlayer(String name) {
 		int id = ThreadLocalRandom.current().nextInt(1, Integer.MAX_VALUE);
 		Team team = null;
 		for (Team t : this.world.getTeams()) {
@@ -94,11 +102,10 @@ public class Server {
 		}
 		Player p = new Player(id, name, team);
 		this.world.getPlayers().put(p.getId(), p);
-		handler.send(new PlayerRegisteredMessage(id));
 		String message = p.getName() + " connected.";
 		this.broadcastMessage(new SystemChatMessage(SystemChatMessage.Level.INFO, message));
 		System.out.println(message);
-		p.setPosition(new Vec2(this.world.getSize().x() / 2.0, this.world.getSize().y() / 2.0));
+		p.setPosition(new Vec2(this.world.getSize().x() / 2.0f, this.world.getSize().y() / 2.0f));
 		if (team != null) {
 			team.getPlayers().add(p);
 			p.setPosition(team.getSpawnPoint());
@@ -106,11 +113,12 @@ public class Server {
 			message = name + " joined team " + team.getName() + ".";
 			this.broadcastMessage(new SystemChatMessage(SystemChatMessage.Level.INFO, message));
 		}
-		return id;
+		this.broadcastMessage(new PlayerUpdateMessage(Type.PLAYER_JOINED, p));
+		return p;
 	}
 
 	public void clientDisconnected(ClientHandler clientHandler) {
-		Player player = this.world.getPlayers().get(clientHandler.getPlayerId());
+		Player player = clientHandler.getPlayer();
 		this.clientHandlers.remove(clientHandler);
 		clientHandler.shutdown();
 		this.world.getPlayers().remove(player.getId());
@@ -120,25 +128,37 @@ public class Server {
 		String message = player.getName() + " disconnected.";
 		this.broadcastMessage(new SystemChatMessage(SystemChatMessage.Level.INFO, message));
 		System.out.println(message);
+		this.broadcastMessage(new PlayerUpdateMessage(Type.PLAYER_LEFT, player));
 	}
 
 	public void kickPlayer(Player player) {
 		for (ClientHandler handler : this.clientHandlers) {
-			if (handler.getPlayerId() == player.getId()) {
+			if (handler.getPlayer().getId() == player.getId()) {
 				handler.shutdown();
 				return;
 			}
 		}
 	}
 
-	public void sendWorldToClients() {
-		for (ClientHandler handler : this.clientHandlers) {
-			handler.send(new WorldUpdateMessage(this.world));
+	public void sendWorldUpdate(WorldUpdate update) {
+		try {
+			byte[] data = update.toBytes();
+			byte[] finalData = new byte[data.length + 1];
+			finalData[0] = DataTypes.WORLD_DATA;
+			System.arraycopy(data, 0, finalData, 1, data.length);
+			for (ClientHandler handler : this.clientHandlers) {
+				if (handler.getClientUdpPort() == -1) continue;
+				this.dataTransceiver.send(finalData, handler.getClientAddress(), handler.getClientUdpPort());
+				byte[] detailData = ByteUtils.prefix(DataTypes.PLAYER_DETAIL, new PlayerDetailUpdate(handler.getPlayer()).toBytes());
+				this.dataTransceiver.send(detailData, handler.getClientAddress(), handler.getClientUdpPort());
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
 		}
 	}
 
-	public void updatePlayerState(PlayerControlState state) {
-		Player p = this.world.getPlayers().get(state.getPlayerId());
+	public void updatePlayerState(int playerId, PlayerControlState state) {
+		Player p = this.world.getPlayers().get(playerId);
 		if (p != null) {
 			p.setState(state);
 		}
@@ -151,45 +171,12 @@ public class Server {
 				p.respawn();
 			}
 		}
+		broadcastMessage(new SystemChatMessage(SystemChatMessage.Level.INFO, "Game has been reset."));
 	}
 
 	public void broadcastMessage(Message message) {
 		for (ClientHandler handler : this.clientHandlers) {
 			handler.send(message);
-		}
-	}
-
-	public void handlePlayerChat(ClientHandler handler, int playerId, ChatMessage msg) {
-		Player p = this.world.getPlayers().get(playerId);
-		if (p == null) return;
-		if (msg.getText().startsWith("/")) {
-			String[] words = msg.getText().substring(1).split("\\s+");
-			if (words.length == 0) return;
-			String command = words[0];
-			String[] args = Arrays.copyOfRange(words, 1, words.length);
-			this.handleCommand(handler, p, command, args);
-		} else {
-			this.broadcastMessage(new PlayerChatMessage(p.getId(), msg.getText()));
-		}
-	}
-
-	public void handleCommand(ClientHandler handler, Player player, String command, String[] args) {
-		if (command.equalsIgnoreCase("gun")) {
-			if (args.length < 1) {
-				return;
-			}
-			String gunName = args[0];
-			if (gunName.equalsIgnoreCase("smg")) {
-				player.setGun(Gun.ak47());
-			} else if (gunName.equalsIgnoreCase("rifle")) {
-				player.setGun(Gun.m1Garand());
-			} else if (gunName.equalsIgnoreCase("shotgun")) {
-				player.setGun(Gun.winchester());
-			}
-			handler.send(new SystemChatMessage(SystemChatMessage.Level.INFO, "Changed gun to " + player.getGun().getType().name() + "."));
-		} else if (command.equalsIgnoreCase("reset")) {
-			this.resetGame();
-			this.broadcastMessage(new SystemChatMessage(SystemChatMessage.Level.INFO, "Game has been reset."));
 		}
 	}
 
@@ -207,17 +194,21 @@ public class Server {
 
 	public void run() {
 		this.running = true;
+		this.dataTransceiver.start();
 		this.worldUpdater.start();
 		this.cli.start();
 		System.out.println("Started AOS-Server TCP on port " + this.serverSocket.getLocalPort() + "; now accepting connections.");
 		while (this.running) {
 			this.acceptClientConnection();
 		}
+		this.shutdown();
 		System.out.println("Stopped accepting new client connections.");
 		this.worldUpdater.shutdown();
 		System.out.println("Stopped world updater.");
 		this.cli.shutdown();
 		System.out.println("Stopped CLI interface.");
+		this.dataTransceiver.shutdown();
+		System.out.println("Stopped data transceiver.");
 	}
 
 

@@ -56,7 +56,7 @@ public class GamePanel extends JPanel {
 	}
 
 	private void drawWorld(Graphics2D g2, World world) {
-		Player myPlayer = world.getPlayers().get(this.client.getPlayerId());
+		Player myPlayer = client.getPlayer();
 		if (myPlayer == null) return;
 		double scale = this.scales[this.scaleIndex];
 		AffineTransform pre = g2.getTransform();
@@ -195,7 +195,8 @@ public class GamePanel extends JPanel {
 	private void drawChat(Graphics2D g2, World world) {
 		int height = g2.getFontMetrics().getHeight();
 		int y = height;
-		for (ChatMessage message : this.client.getLatestChatMessages()) {
+		var cm = this.client.getChatManager();
+		for (ChatMessage message : cm.getLatestChatMessages()) {
 			Color color = Color.WHITE;
 			String text = message.getText();
 			if (message instanceof SystemChatMessage sysMsg) {
@@ -219,14 +220,14 @@ public class GamePanel extends JPanel {
 			y += height;
 		}
 
-		if (this.client.isChatting()) {
+		if (cm.isChatting()) {
 			g2.setColor(Color.WHITE);
-			g2.drawString("> " + this.client.getCurrentChatBuffer(), 5, height * 11);
+			g2.drawString("> " + cm.getCurrentChatBuffer(), 5, height * 11);
 		}
 	}
 
 	private void drawStatus(Graphics2D g2, World world) {
-		Player myPlayer = world.getPlayers().get(this.client.getPlayerId());
+		Player myPlayer = this.client.getPlayer();
 		if (myPlayer == null) return;
 
 		g2.setColor(Color.WHITE);

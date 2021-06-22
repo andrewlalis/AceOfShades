@@ -24,27 +24,27 @@ public class Gun implements Serializable {
 	/**
 	 * How accurate shots from this gun are.
 	 */
-	private final double accuracy;
+	private final float accuracy;
 
 	/**
 	 * How long (in seconds) to wait after each shot, before another is shot.
 	 */
-	private final double shotCooldownTime;
+	private final float shotCooldownTime;
 
 	/**
 	 * How long (in seconds) for reloading a new clip.
 	 */
-	private final double reloadTime;
+	private final float reloadTime;
 
 	/**
 	 * How fast the bullet travels (in m/s).
 	 */
-	private final double bulletSpeed;
+	private final float bulletSpeed;
 
 	/**
 	 * How much damage the bullet does for a direct hit.
 	 */
-	private final double baseDamage;
+	private final float baseDamage;
 
 	/**
 	 * Number of bullets left in the current clip.
@@ -55,7 +55,7 @@ public class Gun implements Serializable {
 	 */
 	private int clipCount;
 
-	private Gun(GunType type, int maxClipCount, int clipSize, int bulletsPerRound, double accuracy, double shotCooldownTime, double reloadTime, double bulletSpeed, double baseDamage) {
+	private Gun(GunType type, int maxClipCount, int clipSize, int bulletsPerRound, float accuracy, float shotCooldownTime, float reloadTime, float bulletSpeed, float baseDamage) {
 		this.type = type;
 		this.maxClipCount = maxClipCount;
 		this.clipSize = clipSize;
@@ -86,23 +86,23 @@ public class Gun implements Serializable {
 		return bulletsPerRound;
 	}
 
-	public double getAccuracy() {
+	public float getAccuracy() {
 		return accuracy;
 	}
 
-	public double getShotCooldownTime() {
+	public float getShotCooldownTime() {
 		return shotCooldownTime;
 	}
 
-	public double getReloadTime() {
+	public float getReloadTime() {
 		return reloadTime;
 	}
 
-	public double getBulletSpeed() {
+	public float getBulletSpeed() {
 		return bulletSpeed;
 	}
 
-	public double getBaseDamage() {
+	public float getBaseDamage() {
 		return baseDamage;
 	}
 
@@ -137,15 +137,32 @@ public class Gun implements Serializable {
 		}
 	}
 
+	/**
+	 * Helper method to obtain a "dummy" gun for client-side rendering.
+	 * TODO: Improve cleanliness so this isn't necessary.
+	 * @param type The type of gun.
+	 * @return The gun.
+	 */
+	public static Gun forType(GunType type) {
+		return new Gun(type, -1, -1, -1, -1, -1, -1, -1, -1);
+	}
+
+	public static Gun forType(GunType type, int maxClipCount, int clipSize, int bulletsPerRound, int currentClipBulletCount, int clipCount) {
+		Gun g = new Gun(type, maxClipCount, clipSize, bulletsPerRound, -1, -1, -1, -1, -1);
+		g.currentClipBulletCount = currentClipBulletCount;
+		g.clipCount = clipCount;
+		return g;
+	}
+
 	public static Gun ak47() {
-		return new Gun(GunType.SMG, 4, 30, 1, 0.10, 0.05, 1.2, 90, 40);
+		return new Gun(GunType.SMG, 4, 30, 1, 0.10f, 0.05f, 1.2f, 90, 40);
 	}
 
 	public static Gun m1Garand() {
-		return new Gun(GunType.RIFLE, 6, 8, 1, 0.02, 0.75, 1.5, 150, 100);
+		return new Gun(GunType.RIFLE, 6, 8, 1, 0.02f, 0.75f, 1.5f, 150, 100);
 	}
 
 	public static Gun winchester() {
-		return new Gun(GunType.SHOTGUN, 8, 4, 3, 0.15, 0.5, 2.0, 75, 60);
+		return new Gun(GunType.SHOTGUN, 8, 4, 3, 0.15f, 0.5f, 2.0f, 75, 60);
 	}
 }

@@ -1,13 +1,15 @@
 package nl.andrewlalis.aos_core.geom;
 
+import java.io.DataInputStream;
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 
-public record Vec2(double x, double y) implements Serializable {
+public record Vec2(float x, float y) implements Serializable {
 
-	public double mag() {
-		return Math.sqrt(x * x + y * y);
+	public float mag() {
+		return (float) Math.sqrt(x * x + y * y);
 	}
 
 	public Vec2 add(Vec2 other) {
@@ -18,16 +20,16 @@ public record Vec2(double x, double y) implements Serializable {
 		return new Vec2(this.x - other.x, this.y - other.y);
 	}
 
-	public Vec2 mul(double factor) {
+	public Vec2 mul(float factor) {
 		return new Vec2(this.x * factor, this.y * factor);
 	}
 
 	public Vec2 unit() {
-		double mag = this.mag();
+		float mag = this.mag();
 		return new Vec2(this.x / mag, this.y / mag);
 	}
 
-	public double dot(Vec2 other) {
+	public float dot(Vec2 other) {
 		return this.x * other.x + this.y * other.y;
 	}
 
@@ -39,14 +41,14 @@ public record Vec2(double x, double y) implements Serializable {
 		return new Vec2(this.y, -this.x);
 	}
 
-	public double dist(Vec2 other) {
+	public float dist(Vec2 other) {
 		return other.sub(this).mag();
 	}
 
 	public Vec2 rotate(double theta) {
 		return new Vec2(
-			this.x * Math.cos(theta) - this.y * Math.sin(theta),
-			this.x * Math.sin(theta) + this.y * Math.cos(theta)
+			(float) (this.x * Math.cos(theta) - this.y * Math.sin(theta)),
+			(float) (this.x * Math.sin(theta) + this.y * Math.cos(theta))
 		);
 	}
 
@@ -59,10 +61,14 @@ public record Vec2(double x, double y) implements Serializable {
 		return "[ " + x + ", " + y + " ]";
 	}
 
-	public static Vec2 random(double min, double max) {
+	public static Vec2 random(float min, float max) {
 		Random r = ThreadLocalRandom.current();
-		double x = r.nextDouble() * (max - min) + min;
-		double y = r.nextDouble() * (max - min) + min;
+		float x = r.nextFloat() * (max - min) + min;
+		float y = r.nextFloat() * (max - min) + min;
 		return new Vec2(x, y);
+	}
+
+	public static Vec2 read(DataInputStream in) throws IOException {
+		return new Vec2(in.readFloat(), in.readFloat());
 	}
 }

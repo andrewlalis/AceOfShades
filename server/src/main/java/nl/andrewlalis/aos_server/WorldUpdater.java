@@ -4,6 +4,9 @@ import nl.andrewlalis.aos_core.geom.Vec2;
 import nl.andrewlalis.aos_core.model.*;
 import nl.andrewlalis.aos_core.model.tools.GunType;
 import nl.andrewlalis.aos_core.net.chat.SystemChatMessage;
+import nl.andrewlalis.aos_core.net.data.Sound;
+import nl.andrewlalis.aos_core.net.data.SoundType;
+import nl.andrewlalis.aos_core.net.data.WorldUpdate;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -15,11 +18,15 @@ public class WorldUpdater extends Thread {
 
 	private final Server server;
 	private final World world;
+
+	private final WorldUpdate worldUpdate;
+
 	private volatile boolean running = true;
 
 	public WorldUpdater(Server server, World world) {
 		this.server = server;
 		this.world = world;
+		this.worldUpdate = new WorldUpdate();
 	}
 
 	public void shutdown() {
@@ -33,7 +40,7 @@ public class WorldUpdater extends Thread {
 			long now = System.currentTimeMillis();
 			long msSinceLastTick = now - lastTick;
 			if (msSinceLastTick >= MS_PER_TICK) {
-				double elapsedSeconds = msSinceLastTick / 1000.0;
+				float elapsedSeconds = msSinceLastTick / 1000.0f;
 				this.tick(elapsedSeconds);
 				lastTick = now;
 			}
@@ -48,21 +55,22 @@ public class WorldUpdater extends Thread {
 		}
 	}
 
-	private void tick(double t) {
-		world.getSoundsToPlay().clear();
+	private void tick(float t) {
+		this.worldUpdate.clear();
 		this.updateBullets(t);
 		this.updatePlayers(t);
-		this.server.sendWorldToClients();
+		this.server.sendWorldUpdate(this.worldUpdate);
 	}
 
-	private void updatePlayers(double t) {
+	private void updatePlayers(float t) {
 		for (Player p : this.world.getPlayers().values()) {
 			this.updatePlayerMovement(p, t);
 			this.updatePlayerShooting(p);
+			this.worldUpdate.addPlayer(p);
 		}
 	}
 
-	private void updatePlayerMovement(Player p, double t) {
+	private void updatePlayerMovement(Player p, float t) {
 		if (p.getState().getMouseLocation() != null && p.getState().getMouseLocation().mag() > 0) {
 			Vec2 newOrientation = p.getState().getMouseLocation().unit();
 			if (p.getTeam() != null) {
@@ -71,8 +79,8 @@ public class WorldUpdater extends Thread {
 			}
 			p.setOrientation(newOrientation);
 		}
-		double vx = 0;
-		double vy = 0;
+		float vx = 0;
+		float vy = 0;
 		if (p.getState().isMovingForward()) vy += Player.MOVEMENT_SPEED;
 		if (p.getState().isMovingBackward()) vy -= Player.MOVEMENT_SPEED;
 		if (p.getState().isMovingLeft()) vx -= Player.MOVEMENT_SPEED;
@@ -83,15 +91,15 @@ public class WorldUpdater extends Thread {
 		}
 		Vec2 leftVector = forwardVector.perp();
 		Vec2 newPos = p.getPosition().add(forwardVector.mul(vy * t)).add(leftVector.mul(vx * t));
-		double nx = newPos.x();
-		double ny = newPos.y();
+		float nx = newPos.x();
+		float ny = newPos.y();
 
 		for (Barricade b : world.getBarricades()) {
 			// TODO: Improve barricade collision smoothness.
-			double x1 = b.getPosition().x();
-			double x2 = x1 + b.getSize().x();
-			double y1 = b.getPosition().y();
-			double y2 = y1 + b.getSize().y();
+			float x1 = b.getPosition().x();
+			float x2 = x1 + b.getSize().x();
+			float y1 = b.getPosition().y();
+			float y2 = y1 + b.getSize().y();
 			if (nx + Player.RADIUS > x1 && nx - Player.RADIUS < x2 && ny + Player.RADIUS > y1 && ny - Player.RADIUS < y2) {
 				double distanceLeft = Math.abs(nx - x1);
 				double distanceRight = Math.abs(nx - x2);
@@ -123,15 +131,17 @@ public class WorldUpdater extends Thread {
 	private void updatePlayerShooting(Player p) {
 		if (p.canUseWeapon()) {
 			for (int i = 0; i < p.getGun().getBulletsPerRound(); i++) {
-				this.world.getBullets().add(new Bullet(p));
+				Bullet b = new Bullet(p);
+				this.world.getBullets().add(b);
+				this.worldUpdate.addBullet(b);
 			}
-			String sound = "ak47shot1.wav";
+			SoundType soundType = SoundType.SHOT_SMG;
 			if (p.getGun().getType() == GunType.RIFLE) {
-				sound = "m1garand-shot1.wav";
+				soundType = SoundType.SHOT_RIFLE;
 			} else if (p.getGun().getType() == GunType.SHOTGUN) {
-				sound = "shotgun-shot1.wav";
+				soundType = SoundType.SHOT_SHOTGUN;
 			}
-			this.world.getSoundsToPlay().add(sound);
+			this.worldUpdate.addSound(new Sound(p.getPosition(), 1.0f, soundType));
 			p.useWeapon();
 		}
 		if (p.getState().isReloading() && !p.isReloading() && p.getGun().canReload()) {
@@ -139,11 +149,11 @@ public class WorldUpdater extends Thread {
 		}
 		if (p.isReloading() && p.isReloadingComplete()) {
 			p.finishReloading();
-			this.world.getSoundsToPlay().add("reload.wav");
+			this.worldUpdate.addSound(new Sound(p.getPosition(), 1.0f, SoundType.RELOAD));
 		}
 	}
 
-	private void updateBullets(double t) {
+	private void updateBullets(float t) {
 		List<Bullet> bulletsToRemove = new ArrayList<>();
 		for (Bullet b : this.world.getBullets()) {
 			Vec2 oldPos = b.getPosition();
@@ -151,26 +161,30 @@ public class WorldUpdater extends Thread {
 			Vec2 pos = b.getPosition();
 			if (pos.x() < 0 || pos.y() < 0 || pos.x() > this.world.getSize().x() || pos.y() > this.world.getSize().y()) {
 				bulletsToRemove.add(b);
+				continue;
 			}
+			boolean removed = false;
 			for (Barricade bar : this.world.getBarricades()) {
 				if (
 					pos.x() > bar.getPosition().x() && pos.x() < bar.getPosition().x() + bar.getSize().x() &&
 					pos.y() > bar.getPosition().y() && pos.y() < bar.getPosition().y() + bar.getSize().y()
 				) {
-					int n = ThreadLocalRandom.current().nextInt(1, 6);
-					this.world.getSoundsToPlay().add("bullet_impact_" + n + ".wav");
+					int code = ThreadLocalRandom.current().nextInt(SoundType.BULLET_IMPACT_1.getCode(), SoundType.BULLET_IMPACT_5.getCode() + 1);
+					this.worldUpdate.addSound(new Sound(b.getPosition(), 1.0f, SoundType.get((byte) code)));
 					bulletsToRemove.add(b);
+					removed = true;
 					break;
 				}
 			}
+			if (removed) continue;
 
-			double x1 = oldPos.x();
-			double x2 = b.getPosition().x();
-			double y1 = oldPos.y();
-			double y2 = b.getPosition().y();
-			double lineDist = oldPos.dist(b.getPosition());
+			float x1 = oldPos.x();
+			float x2 = b.getPosition().x();
+			float y1 = oldPos.y();
+			float y2 = b.getPosition().y();
+			float lineDist = oldPos.dist(b.getPosition());
 			for (Player p : this.world.getPlayers().values()) {
-				double n = ((p.getPosition().x() - x1) * (x2 - x1) + (p.getPosition().y() - y1) * (y2 - y1)) / lineDist;
+				float n = ((p.getPosition().x() - x1) * (x2 - x1) + (p.getPosition().y() - y1) * (y2 - y1)) / lineDist;
 				n = Math.max(Math.min(n, 1), 0);
 				double dist = p.getPosition().dist(new Vec2(x1 + n * (x2 - x1), y1 + n * (y2 - y1)));
 				if (dist < Player.RADIUS && (p.getTeam() == null || p.getTeam().getSpawnPoint().dist(p.getPosition()) > Team.SPAWN_RADIUS)) {
@@ -181,7 +195,7 @@ public class WorldUpdater extends Thread {
 					if (p.getHealth() == 0.0f) {
 						Player shooter = this.world.getPlayers().get(b.getPlayerId());
 						this.server.broadcastMessage(new SystemChatMessage(SystemChatMessage.Level.SEVERE, p.getName() + " was shot by " + shooter.getName() + "."));
-						world.getSoundsToPlay().add("death.wav");
+						this.worldUpdate.addSound(new Sound(p.getPosition(), 1.0f, SoundType.DEATH));
 						if (shooter.getTeam() != null) {
 							shooter.getTeam().incrementScore();
 						}
@@ -189,6 +203,7 @@ public class WorldUpdater extends Thread {
 					}
 				}
 			}
+			this.worldUpdate.addBullet(b);
 		}
 		this.world.getBullets().removeAll(bulletsToRemove);
 	}

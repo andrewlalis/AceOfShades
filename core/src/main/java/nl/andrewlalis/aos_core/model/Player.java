@@ -6,9 +6,9 @@ import nl.andrewlalis.aos_core.model.tools.Gun;
 import java.util.Objects;
 
 public class Player extends PhysicsObject implements Comparable<Player> {
-	public static final double MOVEMENT_SPEED = 10; // Movement speed, in m/s
-	public static final double RADIUS = 0.5; // Collision radius, in meters.
-	public static final double RESUPPLY_COOLDOWN = 30; // Seconds between allowing resupply.
+	public static final float MOVEMENT_SPEED = 10; // Movement speed, in m/s
+	public static final float RADIUS = 0.5f; // Collision radius, in meters.
+	public static final float RESUPPLY_COOLDOWN = 30; // Seconds between allowing resupply.
 	public static final float MAX_HEALTH = 100.0f;
 
 	private final int id;
@@ -28,10 +28,10 @@ public class Player extends PhysicsObject implements Comparable<Player> {
 		this.name = name;
 		this.team = team;
 		this.state = new PlayerControlState();
-		this.state.setPlayerId(this.id);
-		this.gun = Gun.winchester();
+		this.gun = Gun.ak47();
 		this.health = MAX_HEALTH;
 		this.useWeapon();
+		this.lastShot = System.currentTimeMillis();
 	}
 
 	public int getId() {
@@ -66,8 +66,12 @@ public class Player extends PhysicsObject implements Comparable<Player> {
 		this.gun = gun;
 	}
 
-	public long getLastShot() {
-		return lastShot;
+	public void setHealth(float health) {
+		this.health = health;
+	}
+
+	public void setReloading(boolean reloading) {
+		this.reloading = reloading;
 	}
 
 	public boolean canUseWeapon() {
@@ -75,7 +79,7 @@ public class Player extends PhysicsObject implements Comparable<Player> {
 			!this.state.isReloading() &&
 			!this.reloading &&
 			this.gun.getCurrentClipBulletCount() > 0 &&
-			this.lastShot + this.gun.getShotCooldownTime() * 1000 < System.currentTimeMillis() &&
+			this.lastShot + ((long) (this.gun.getShotCooldownTime() * 1000)) < System.currentTimeMillis() &&
 			(this.getTeam() == null || this.getTeam().getSpawnPoint().dist(this.getPosition()) > Team.SPAWN_RADIUS);
 	}
 

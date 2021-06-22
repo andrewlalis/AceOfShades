@@ -3,50 +3,39 @@ package nl.andrewlalis.aos_client;
 import nl.andrewlalis.aos_client.view.ConnectDialog;
 import nl.andrewlalis.aos_client.view.GameFrame;
 import nl.andrewlalis.aos_client.view.GamePanel;
-import nl.andrewlalis.aos_core.model.PlayerControlState;
+import nl.andrewlalis.aos_core.model.Player;
 import nl.andrewlalis.aos_core.model.World;
-import nl.andrewlalis.aos_core.net.PlayerControlStateMessage;
-import nl.andrewlalis.aos_core.net.chat.ChatMessage;
-import nl.andrewlalis.aos_core.net.chat.PlayerChatMessage;
+import nl.andrewlalis.aos_core.model.tools.Gun;
+import nl.andrewlalis.aos_core.net.data.DataTypes;
+import nl.andrewlalis.aos_core.net.data.PlayerDetailUpdate;
+import nl.andrewlalis.aos_core.net.data.WorldUpdate;
 
 import java.io.IOException;
-import java.util.LinkedList;
-import java.util.List;
 
 /**
  * The main class for the client, which connects to a server to join and play.
  */
 public class Client {
-	public static final int MAX_CHAT_MESSAGES = 10;
+	private final MessageTransceiver messageTransceiver;
 
-	private MessageTransceiver messageTransceiver;
-
-	private int playerId;
-	private PlayerControlState playerControlState;
 	private World world;
-
-	private final List<ChatMessage> chatMessages;
-	private boolean chatting = false;
-	private final StringBuilder chatBuffer;
+	private Player myPlayer;
 
 	private final GameRenderer renderer;
 	private final GamePanel gamePanel;
 	private final SoundManager soundManager;
+	private final ChatManager chatManager;
 
-	public Client() {
-		this.chatMessages = new LinkedList<>();
-		this.chatBuffer = new StringBuilder();
+	public Client(String serverHost, int serverPort, String username) throws IOException {
 		this.soundManager = new SoundManager();
+		this.chatManager = new ChatManager(this.soundManager);
 		this.gamePanel = new GamePanel(this);
 		this.renderer = new GameRenderer(this, gamePanel);
-	}
-
-	public void connect(String serverHost, int serverPort, String username) throws IOException, ClassNotFoundException {
-		this.messageTransceiver = new MessageTransceiver(this);
-		this.messageTransceiver.connectToServer(serverHost, serverPort, username);
+		this.messageTransceiver = new MessageTransceiver(this, serverHost, serverPort, username);
 		this.messageTransceiver.start();
+		this.chatManager.bindTransceiver(this.messageTransceiver);
 
-		while (this.playerControlState == null || this.world == null) {
+		while (this.myPlayer == null || this.world == null) {
 			try {
 				System.out.println("Waiting for server response and player registration...");
 				Thread.sleep(100);
@@ -61,93 +50,75 @@ public class Client {
 		this.renderer.start();
 	}
 
+	public ChatManager getChatManager() {
+		return chatManager;
+	}
+
 	public World getWorld() {
 		return world;
 	}
 
+	public void updateWorld(WorldUpdate update) {
+		if (this.world == null) return;
+		this.world.getBullets().clear();
+		for (var u : update.getBulletUpdates()) {
+			this.world.getBullets().add(u.toBullet());
+		}
+		for (var p : update.getPlayerUpdates()) {
+			Player player = this.world.getPlayers().get(p.getId());
+			if (player != null) {
+				player.setPosition(p.getPosition());
+				player.setOrientation(p.getOrientation());
+				player.setVelocity(p.getVelocity());
+				player.setGun(Gun.forType(p.getGunType()));
+			}
+		}
+		this.soundManager.play(update.getSoundsToPlay());
+	}
+
 	public void setWorld(World world) {
 		this.world = world;
-		for (String sound : this.world.getSoundsToPlay()) {
-			this.soundManager.play(sound);
-		}
 	}
 
-	public void initPlayerData(int playerId) {
-		this.playerId = playerId;
-		this.playerControlState = new PlayerControlState();
-		this.playerControlState.setPlayerId(playerId);
+	public void setPlayer(Player player) {
+		this.myPlayer = player;
 	}
 
-	public int getPlayerId() {
-		return playerId;
+	public Player getPlayer() {
+		return myPlayer;
 	}
 
-	public PlayerControlState getPlayerState() {
-		return playerControlState;
+	public void updatePlayer(PlayerDetailUpdate update) {
+		if (this.myPlayer == null) return;
+		this.myPlayer.setHealth(update.getHealth());
+		this.myPlayer.setReloading(update.isReloading());
+		this.myPlayer.setGun(Gun.forType(
+			this.myPlayer.getGun().getType(),
+			update.getGunMaxClipCount(),
+			update.getGunClipSize(),
+			update.getGunBulletsPerRound(),
+			update.getGunCurrentClipBulletCount(),
+			update.getGunClipCount()
+		));
 	}
 
 	public void sendPlayerState() {
 		try {
-			this.messageTransceiver.send(new PlayerControlStateMessage(this.playerControlState));
+			this.messageTransceiver.sendData(DataTypes.PLAYER_CONTROL_STATE, myPlayer.getId(), myPlayer.getState().toBytes());
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 	}
 
-	public synchronized void addChatMessage(ChatMessage message) {
-		this.chatMessages.add(message);
-		if (message.getClass() == PlayerChatMessage.class) {
-			this.soundManager.play("chat.wav");
-		}
-		while (this.chatMessages.size() > MAX_CHAT_MESSAGES) {
-			this.chatMessages.remove(0);
-		}
-	}
-
-	public ChatMessage[] getLatestChatMessages() {
-		return this.chatMessages.toArray(new ChatMessage[0]);
-	}
-
-	public boolean isChatting() {
-		return this.chatting;
-	}
-
-	public void setChatting(boolean chatting) {
-		this.chatting = chatting;
-		if (this.chatting) {
-			this.chatBuffer.setLength(0);
-		}
-	}
-
-	public void appendToChat(char c) {
-		this.chatBuffer.append(c);
-	}
-
-	public void backspaceChat() {
-		if (this.chatBuffer.length() > 0) {
-			this.chatBuffer.setLength(this.chatBuffer.length() - 1);
-		}
-	}
-
-	public void sendChat() {
-		String message = this.chatBuffer.toString().trim();
-		if (!message.isBlank() && !message.equals("/")) {
-			try {
-				this.messageTransceiver.send(new PlayerChatMessage(this.playerId, message));
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-		}
-		this.setChatting(false);
-	}
-
-	public String getCurrentChatBuffer() {
-		return this.chatBuffer.toString();
-	}
-
 	public void shutdown() {
+		this.chatManager.unbindTransceiver();
+		System.out.println("Chat manager shutdown.");
 		this.messageTransceiver.shutdown();
+		System.out.println("Message transceiver shutdown.");
 		this.renderer.shutdown();
+		System.out.println("Renderer shutdown.");
+		this.soundManager.close();
+		System.out.println("Sound manager closed.");
 	}
 
 

@@ -77,6 +77,9 @@ public class ConnectDialog extends JDialog {
 		if (usernameField.getText() == null || usernameField.getText().isBlank()) {
 			warnings.add("Username must not be empty.");
 		}
+		if (usernameField.getText() != null && usernameField.getText().length() > 16) {
+			warnings.add("Username is too long.");
+		}
 		if (addressField.getText() != null && !addressPattern.matcher(addressField.getText()).matches()) {
 			warnings.add("Address must be in the form HOST:PORT.");
 		}
@@ -97,11 +100,9 @@ public class ConnectDialog extends JDialog {
 		String host = parts[0].trim();
 		int port = Integer.parseInt(parts[1]);
 		String username = usernameField.getText();
-		Client client = new Client();
 		try {
-			client.connect(host, port, username);
-		} catch (IOException | ClassNotFoundException ex) {
-			client.shutdown();
+			new Client(host, port, username);
+		} catch (IOException ex) {
 			ex.printStackTrace();
 			JOptionPane.showMessageDialog(null, "Could not connect:\n" + ex.getMessage(), "Connection Error", JOptionPane.WARNING_MESSAGE);
 		}

@@ -35,7 +35,7 @@ public class GameRenderer extends Thread {
 			long now = System.currentTimeMillis();
 			long msSinceLastFrame = now - lastFrame;
 			if (msSinceLastFrame >= MS_PER_FRAME) {
-				double elapsedSeconds = msSinceLastFrame / 1000.0;
+				float elapsedSeconds = msSinceLastFrame / 1000.0f;
 				this.gamePanel.repaint();
 				this.updateWorld(elapsedSeconds);
 				lastFrame = now;
@@ -52,7 +52,7 @@ public class GameRenderer extends Thread {
 		}
 	}
 
-	private void updateWorld(double t) {
+	private void updateWorld(float t) {
 		World world = this.client.getWorld();
 		for (Player p : world.getPlayers().values()) {
 			p.setPosition(p.getPosition().add(p.getVelocity().mul(t)));

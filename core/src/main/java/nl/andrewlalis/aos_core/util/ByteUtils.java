@@ -45,4 +45,11 @@ public class ByteUtils {
 		if (n != length) throw new IOException("Could not read enough bytes to read string.");
 		return new String(strBytes, StandardCharsets.UTF_8);
 	}
+
+	public static byte[] prefix(byte pre, byte[] data) {
+		byte[] full = new byte[data.length + 1];
+		full[0] = pre;
+		System.arraycopy(data, 0, full, 1, data.length);
+		return full;
+	}
 }

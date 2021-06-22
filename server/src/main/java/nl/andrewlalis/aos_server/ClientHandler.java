@@ -1,15 +1,19 @@
 package nl.andrewlalis.aos_server;
 
+import nl.andrewlalis.aos_core.model.Player;
 import nl.andrewlalis.aos_core.net.IdentMessage;
 import nl.andrewlalis.aos_core.net.Message;
-import nl.andrewlalis.aos_core.net.PlayerControlStateMessage;
+import nl.andrewlalis.aos_core.net.PlayerRegisteredMessage;
 import nl.andrewlalis.aos_core.net.Type;
 import nl.andrewlalis.aos_core.net.chat.ChatMessage;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.net.InetAddress;
 import java.net.Socket;
+import java.net.SocketException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -23,29 +27,41 @@ public class ClientHandler extends Thread {
 	private final ObjectOutputStream out;
 	private final ObjectInputStream in;
 
-	private int playerId;
+	private Player player;
+	private final InetAddress clientAddress;
+	private int clientUdpPort = -1;
 
 	private volatile boolean running = true;
 
 	public ClientHandler(Server server, Socket socket) throws IOException {
 		this.server = server;
 		this.socket = socket;
+		this.clientAddress = this.socket.getInetAddress();
 		this.out = new ObjectOutputStream(socket.getOutputStream());
 		this.in = new ObjectInputStream(socket.getInputStream());
 	}
 
-	public int getPlayerId() {
-		return playerId;
+	public Player getPlayer() {
+		return player;
+	}
+
+	public InetAddress getClientAddress() {
+		return clientAddress;
+	}
+
+	public int getClientUdpPort() {
+		return clientUdpPort;
 	}
 
 	public void shutdown() {
 		this.running = false;
+		this.sendingQueue.shutdown();
 		try {
 			this.in.close();
 			this.out.close();
 			this.socket.close();
 		} catch (IOException e) {
-			System.err.println("Could not close streams when shutting down client handler for player " + this.playerId + ": " + e.getMessage());
+			System.err.println("Could not close streams when shutting down client handler for player " + this.player.getId() + ": " + e.getMessage());
 		}
 	}
 
@@ -63,29 +79,29 @@ public class ClientHandler extends Thread {
 
 	@Override
 	public void run() {
-		try {
-			while (this.running) {
-				try {
-					Message msg = (Message) this.in.readObject();
-					if (msg.getType() == Type.IDENT) {
-						IdentMessage ident = (IdentMessage) msg;
-						this.playerId = this.server.registerNewPlayer(ident.getName(), this);
-					} else if (msg.getType() == Type.CHAT) {
-						this.server.handlePlayerChat(this, this.playerId, (ChatMessage) msg);
-					} else if (msg.getType() == Type.PLAYER_CONTROL_STATE) {
-						this.server.updatePlayerState(((PlayerControlStateMessage) msg).getPlayerControlState());
-					}
-				} catch (ClassNotFoundException e) {
+		while (this.running) {
+			try {
+				Message msg = (Message) this.in.readObject();
+				if (msg.getType() == Type.IDENT) {
+					IdentMessage ident = (IdentMessage) msg;
+					this.player = this.server.registerNewPlayer(ident.getName());
+					this.clientUdpPort = ident.getUdpPort();
+					this.send(new PlayerRegisteredMessage(this.player, this.server.getWorld()));
+				} else if (msg.getType() == Type.CHAT) {
+					this.server.getChatManager().handlePlayerChat(this, this.player, (ChatMessage) msg);
+				}
+			} catch (SocketException e) {
+				if (e.getMessage().equals("Socket closed")) {
+					this.shutdown();
+				} else {
 					e.printStackTrace();
 				}
+			} catch (EOFException e) {
+				this.shutdown();
+			} catch (IOException | ClassNotFoundException e) {
+				e.printStackTrace();
+				this.shutdown();
 			}
-		} catch (IOException e) {
-			// Ignore this exception, consider the client disconnected.
-		}
-		try {
-			this.socket.close();
-		} catch (IOException e) {
-			e.printStackTrace();
 		}
 		this.server.clientDisconnected(this);
 	}

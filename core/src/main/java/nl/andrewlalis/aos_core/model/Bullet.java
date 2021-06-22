@@ -13,15 +13,19 @@ public class Bullet extends PhysicsObject {
 	public Bullet(Player player) {
 		this.playerId = player.getId();
 		this.setPosition(player.getPosition()
-			.add(player.getOrientation().mul(1.5))
+			.add(player.getOrientation().mul(1.5f))
 			.add(player.getOrientation().perp().mul(Player.RADIUS))
 		);
 		this.setOrientation(player.getOrientation());
-
-		Random r = ThreadLocalRandom.current();
-		Vec2 perturbation = new Vec2((r.nextDouble() - 0.5) * 2, (r.nextDouble() - 0.5) * 2).mul(player.getGun().getAccuracy());
+		Vec2 perturbation = Vec2.random(-1, 1).mul(player.getGun().getAccuracy());
 		this.setVelocity(this.getOrientation().add(perturbation).mul(player.getGun().getBulletSpeed()));
 		this.gun = player.getGun();
+	}
+
+	public Bullet(Vec2 position, Vec2 velocity) {
+		super(position, new Vec2(0, -1), velocity);
+		this.playerId = -1;
+		this.gun = null;
 	}
 
 	public int getPlayerId() {

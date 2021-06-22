@@ -1,14 +1,23 @@
 package nl.andrewlalis.aos_core.net;
 
-public class PlayerRegisteredMessage extends Message {
-	private final int playerId;
+import nl.andrewlalis.aos_core.model.Player;
+import nl.andrewlalis.aos_core.model.World;
 
-	public PlayerRegisteredMessage(int playerId) {
+public class PlayerRegisteredMessage extends Message {
+	private final Player player;
+	private final World world;
+
+	public PlayerRegisteredMessage(Player player, World world) {
 		super(Type.PLAYER_REGISTERED);
-		this.playerId = playerId;
+		this.player = player;
+		this.world = world;
 	}
 
-	public int getPlayerId() {
-		return playerId;
+	public Player getPlayer() {
+		return player;
+	}
+
+	public World getWorld() {
+		return world;
 	}
 }

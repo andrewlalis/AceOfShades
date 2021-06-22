@@ -1,12 +1,12 @@
 package nl.andrewlalis.aos_core.model;
 
 import nl.andrewlalis.aos_core.geom.Vec2;
+import nl.andrewlalis.aos_core.net.data.DataTypes;
 
 import java.io.Serializable;
+import java.nio.ByteBuffer;
 
 public class PlayerControlState implements Serializable {
-	private int playerId;
-
 	boolean movingLeft;
 	boolean movingRight;
 	boolean movingForward;
@@ -16,14 +16,6 @@ public class PlayerControlState implements Serializable {
 	boolean reloading;
 
 	Vec2 mouseLocation;
-
-	public int getPlayerId() {
-		return playerId;
-	}
-
-	public void setPlayerId(int playerId) {
-		this.playerId = playerId;
-	}
 
 	public boolean isMovingLeft() {
 		return movingLeft;
@@ -79,5 +71,47 @@ public class PlayerControlState implements Serializable {
 
 	public void setMouseLocation(Vec2 mouseLocation) {
 		this.mouseLocation = mouseLocation;
+	}
+
+	@Override
+	public String toString() {
+		return "PlayerControlState{" +
+			"movingLeft=" + movingLeft +
+			", movingRight=" + movingRight +
+			", movingForward=" + movingForward +
+			", movingBackward=" + movingBackward +
+			", shooting=" + shooting +
+			", reloading=" + reloading +
+			", mouseLocation=" + mouseLocation +
+			'}';
+	}
+
+	public byte[] toBytes() {
+		ByteBuffer buffer = ByteBuffer.allocate(Integer.BYTES + 2 * Float.BYTES);
+		int flags = 0;
+		if (this.movingLeft) flags |= 1;
+		if (this.movingRight) flags |= 2;
+		if (this.movingForward) flags |= 4;
+		if (this.movingBackward) flags |= 8;
+		if (this.shooting) flags |= 16;
+		if (this.reloading) flags |= 32;
+		buffer.putInt(flags);
+		buffer.putFloat(this.mouseLocation.x());
+		buffer.putFloat(this.mouseLocation.y());
+		return buffer.array();
+	}
+
+	public static PlayerControlState fromBytes(byte[] bytes) {
+		var s = new PlayerControlState();
+		ByteBuffer buffer = ByteBuffer.wrap(bytes);
+		int flags = buffer.getInt();
+		s.movingLeft = (flags & 1) > 0;
+		s.movingRight = (flags & 2) > 0;
+		s.movingForward = (flags & 4) > 0;
+		s.movingBackward = (flags & 8) > 0;
+		s.shooting = (flags & 16) > 0;
+		s.reloading = (flags & 32) > 0;
+		s.mouseLocation = new Vec2(buffer.getFloat(), buffer.getFloat());
+		return s;
 	}
 }

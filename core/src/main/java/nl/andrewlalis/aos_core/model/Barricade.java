@@ -21,7 +21,7 @@ public class Barricade implements Serializable {
 		this.size = size;
 	}
 
-	public Barricade(double x, double y, double w, double h) {
+	public Barricade(float x, float y, float w, float h) {
 		this(new Vec2(x, y), new Vec2(w, h));
 	}
 
