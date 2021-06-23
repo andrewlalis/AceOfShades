@@ -185,6 +185,7 @@ public class Server {
 		try {
 			this.serverSocket.close();
 			for (ClientHandler handler : this.clientHandlers) {
+				handler.send(new Message(Type.SERVER_SHUTDOWN));
 				handler.shutdown();
 			}
 		} catch (IOException e) {

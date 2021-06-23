@@ -88,9 +88,6 @@ public class ClientHandler extends Thread {
 
 	public void shutdown() {
 		this.running = false;
-		if (!this.socket.isClosed()) {
-			this.send(new Message(Type.SERVER_SHUTDOWN));
-		}
 		this.sendingQueue.shutdown();
 		try {
 			boolean terminated = false;
