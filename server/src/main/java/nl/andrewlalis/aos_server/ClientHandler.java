@@ -16,6 +16,7 @@ import java.net.Socket;
 import java.net.SocketException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Thread which handles communicating with a single client socket connection.
@@ -41,6 +42,38 @@ public class ClientHandler extends Thread {
 		this.in = new ObjectInputStream(socket.getInputStream());
 	}
 
+	/**
+	 * Initializes the TCP connection to a client, by waiting for the client to
+	 * send an IDENT packet containing the client's username and other details
+	 * that are needed to start.
+	 * <p>
+	 *     Once we receive a valid IDENT packet, the player is registered into
+	 *     the server, and receives a {@link PlayerRegisteredMessage} response.
+	 * </p>
+	 * @throws IOException If initialization could not be completed.
+	 */
+	private void initializeConnection() throws IOException {
+		boolean connectionEstablished = false;
+		int attempts = 0;
+		while (!connectionEstablished && attempts < 100) {
+			try {
+				Object obj = this.in.readObject();
+				if (obj instanceof IdentMessage msg) {
+					this.player = this.server.registerNewPlayer(msg.getName());
+					this.clientUdpPort = msg.getUdpPort();
+					this.send(new PlayerRegisteredMessage(this.player, this.server.getWorld()));
+					connectionEstablished = true;
+				}
+			} catch (ClassNotFoundException e) {
+				e.printStackTrace();
+			}
+			attempts++;
+		}
+		if (!connectionEstablished) {
+			throw new IOException("Could not establish connection after " + attempts + " attempts.");
+		}
+	}
+
 	public Player getPlayer() {
 		return player;
 	}
@@ -55,12 +88,21 @@ public class ClientHandler extends Thread {
 
 	public void shutdown() {
 		this.running = false;
+		if (!this.socket.isClosed()) {
+			this.send(new Message(Type.SERVER_SHUTDOWN));
+		}
 		this.sendingQueue.shutdown();
 		try {
+			boolean terminated = false;
+			while (!terminated) {
+				terminated = this.sendingQueue.awaitTermination(1000, TimeUnit.MILLISECONDS);
+			}
 			this.in.close();
 			this.out.close();
-			this.socket.close();
-		} catch (IOException e) {
+			if (!this.socket.isClosed()) {
+				this.socket.close();
+			}
+		} catch (IOException | InterruptedException e) {
 			System.err.println("Could not close streams when shutting down client handler for player " + this.player.getId() + ": " + e.getMessage());
 		}
 	}
@@ -72,22 +114,24 @@ public class ClientHandler extends Thread {
 				this.out.reset();
 				this.out.writeObject(message);
 			} catch (IOException e) {
-				e.printStackTrace();
+				System.err.println("Could not send message " + message.getClass().getName() + ": " + e.getMessage());
 			}
 		});
 	}
 
 	@Override
 	public void run() {
+		try {
+			this.initializeConnection();
+		} catch (IOException e) {
+			System.err.println("Could not initialize connection to the client: " + e.getMessage());
+			this.shutdown();
+			return;
+		}
 		while (this.running) {
 			try {
 				Message msg = (Message) this.in.readObject();
-				if (msg.getType() == Type.IDENT) {
-					IdentMessage ident = (IdentMessage) msg;
-					this.player = this.server.registerNewPlayer(ident.getName());
-					this.clientUdpPort = ident.getUdpPort();
-					this.send(new PlayerRegisteredMessage(this.player, this.server.getWorld()));
-				} else if (msg.getType() == Type.CHAT) {
+				if (msg.getType() == Type.CHAT) {
 					this.server.getChatManager().handlePlayerChat(this, this.player, (ChatMessage) msg);
 				}
 			} catch (SocketException e) {

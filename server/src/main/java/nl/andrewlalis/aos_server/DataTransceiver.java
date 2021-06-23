@@ -47,8 +47,10 @@ public class DataTransceiver extends Thread {
 				this.socket.receive(packet);
 				ByteBuffer b = ByteBuffer.wrap(packet.getData(), 0, packet.getLength());
 				byte type = b.get();
-				int playerId = b.getInt();
-				if (type == DataTypes.PLAYER_CONTROL_STATE) {
+				if (type == DataTypes.INIT) { // New client is trying to initiate an outbound connection so simply echo packet.
+					this.send(new byte[]{DataTypes.INIT}, packet.getAddress(), packet.getPort());
+				} else if (type == DataTypes.PLAYER_CONTROL_STATE) {
+					int playerId = b.getInt();
 					if (playerId < 1) continue;
 					byte[] stateBuffer = new byte[b.remaining()];
 					b.get(stateBuffer);

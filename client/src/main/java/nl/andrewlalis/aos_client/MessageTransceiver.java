@@ -3,8 +3,8 @@ package nl.andrewlalis.aos_client;
 import nl.andrewlalis.aos_core.net.*;
 import nl.andrewlalis.aos_core.net.chat.ChatMessage;
 
+import javax.swing.*;
 import java.io.*;
-import java.net.InetAddress;
 import java.net.Socket;
 import java.net.SocketException;
 import java.nio.ByteBuffer;
@@ -29,11 +29,40 @@ public class MessageTransceiver extends Thread {
 	public MessageTransceiver(Client client, String serverHost, int serverPort, String username) throws IOException {
 		this.client = client;
 		this.socket = new Socket(serverHost, serverPort);
-		this.dataTransceiver = new DataTransceiver(client);
+		this.dataTransceiver = new DataTransceiver(client, this.socket.getInetAddress(), this.socket.getPort());
 		this.out = new ObjectOutputStream(this.socket.getOutputStream());
 		this.in = new ObjectInputStream(this.socket.getInputStream());
-		this.send(new IdentMessage(username, this.dataTransceiver.getLocalPort()));
-		System.out.println("Sent identification packet.");
+		this.initializeConnection(username);
+	}
+
+	/**
+	 * Initializes the TCP connection to the server. This involves sending an
+	 * IDENT packet containing some data the server needs about this client, and
+	 * waiting for a {@link PlayerRegisteredMessage} response from the server,
+	 * which contains the basic data we need to start the game.
+	 * @param username The username for this client.
+	 * @throws IOException If the connection could not be initialized.
+	 */
+	private void initializeConnection(String username) throws IOException {
+		boolean established = false;
+		int attempts = 0;
+		while (!established && attempts < 100) {
+			this.send(new IdentMessage(username, this.dataTransceiver.getLocalPort()));
+			try {
+				Object obj = this.in.readObject();
+				if (obj instanceof PlayerRegisteredMessage msg) {
+					this.client.setPlayer(msg.getPlayer());
+					this.client.setWorld(msg.getWorld());
+					established = true;
+				}
+			} catch (ClassNotFoundException e) {
+				e.printStackTrace();
+			}
+			attempts++;
+		}
+		if (!established) {
+			throw new IOException("Could not initialize connection to server in " + attempts + " attempts.");
+		}
 	}
 
 	public void shutdown() {
@@ -66,7 +95,7 @@ public class MessageTransceiver extends Thread {
 		buffer.put(type);
 		buffer.putInt(playerId);
 		buffer.put(data);
-		this.dataTransceiver.send(buffer.array(), this.socket.getInetAddress(), this.socket.getPort());
+		this.dataTransceiver.send(buffer.array());
 	}
 
 	@Override
@@ -75,12 +104,7 @@ public class MessageTransceiver extends Thread {
 		while (this.running) {
 			try {
 				Message msg = (Message) this.in.readObject();
-				if (msg.getType() == Type.PLAYER_REGISTERED) {
-					System.out.println("Received player registration response from server.");
-					PlayerRegisteredMessage prm = (PlayerRegisteredMessage) msg;
-					this.client.setPlayer(prm.getPlayer());
-					this.client.setWorld(prm.getWorld());
-				} else if (msg.getType() == Type.CHAT) {
+				if (msg.getType() == Type.CHAT) {
 					this.client.getChatManager().addChatMessage((ChatMessage) msg);
 				} else if (msg.getType() == Type.PLAYER_JOINED && this.client.getWorld() != null) {
 					PlayerUpdateMessage pum = (PlayerUpdateMessage) msg;
@@ -88,6 +112,9 @@ public class MessageTransceiver extends Thread {
 				} else if (msg.getType() == Type.PLAYER_LEFT && this.client.getWorld() != null) {
 					PlayerUpdateMessage pum = (PlayerUpdateMessage) msg;
 					this.client.getWorld().getPlayers().remove(pum.getPlayer().getId());
+				} else if (msg.getType() == Type.SERVER_SHUTDOWN) {
+					this.client.shutdown();
+					JOptionPane.showMessageDialog(null, "Server has been shut down.", "Server Shutdown", JOptionPane.WARNING_MESSAGE);
 				}
 			} catch (StreamCorruptedException | EOFException e) {
 				this.shutdown();

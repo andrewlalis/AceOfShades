@@ -22,15 +22,14 @@ public class Client {
 	private Player myPlayer;
 
 	private final GameRenderer renderer;
-	private final GamePanel gamePanel;
 	private final SoundManager soundManager;
 	private final ChatManager chatManager;
+
+	private final GameFrame frame;
 
 	public Client(String serverHost, int serverPort, String username) throws IOException {
 		this.soundManager = new SoundManager();
 		this.chatManager = new ChatManager(this.soundManager);
-		this.gamePanel = new GamePanel(this);
-		this.renderer = new GameRenderer(this, gamePanel);
 		this.messageTransceiver = new MessageTransceiver(this, serverHost, serverPort, username);
 		this.messageTransceiver.start();
 		this.chatManager.bindTransceiver(this.messageTransceiver);
@@ -45,8 +44,10 @@ public class Client {
 		}
 
 		System.out.println("Player and world data initialized.");
-		GameFrame g = new GameFrame("Ace of Shades - " + serverHost + ":" + serverPort, this, this.gamePanel);
-		g.setVisible(true);
+		GamePanel gamePanel = new GamePanel(this);
+		this.renderer = new GameRenderer(this, gamePanel);
+		this.frame = new GameFrame("Ace of Shades - " + serverHost + ":" + serverPort, this, gamePanel);
+		this.frame.setVisible(true);
 		this.renderer.start();
 	}
 
@@ -119,6 +120,7 @@ public class Client {
 		System.out.println("Renderer shutdown.");
 		this.soundManager.close();
 		System.out.println("Sound manager closed.");
+		this.frame.dispose();
 	}
 
 

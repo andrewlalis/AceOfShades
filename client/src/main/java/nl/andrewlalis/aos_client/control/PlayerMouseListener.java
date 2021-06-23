@@ -9,7 +9,7 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
 
 public class PlayerMouseListener extends MouseInputAdapter {
-	private static final float MOUSE_UPDATES_PER_SECOND = 30.0f;
+	private static final float MOUSE_UPDATES_PER_SECOND = 60.0f;
 	private static final long MS_PER_MOUSE_UPDATE = (long) (1000.0f / MOUSE_UPDATES_PER_SECOND);
 
 	private final Client client;

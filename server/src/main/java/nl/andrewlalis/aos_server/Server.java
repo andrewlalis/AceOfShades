@@ -197,7 +197,7 @@ public class Server {
 		this.dataTransceiver.start();
 		this.worldUpdater.start();
 		this.cli.start();
-		System.out.println("Started AOS-Server TCP on port " + this.serverSocket.getLocalPort() + "; now accepting connections.");
+		System.out.println("Started AOS-Server TCP/UDP on port " + this.serverSocket.getLocalPort() + "; now accepting connections.");
 		while (this.running) {
 			this.acceptClientConnection();
 		}
