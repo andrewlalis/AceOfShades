@@ -7,11 +7,11 @@ import nl.andrewlalis.aos_client.launcher.servers.ServerInfoListModel;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.KeyAdapter;
-import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
@@ -35,63 +35,11 @@ public class Launcher extends JFrame {
 
 	private Container buildContent() {
 		JTabbedPane mainPanel = new JTabbedPane(SwingConstants.TOP, JTabbedPane.SCROLL_TAB_LAYOUT);
-		mainPanel.addTab("Connect", null, this.getConnectPanel(), "Connect to a server and play.");
 		mainPanel.addTab("Servers", null, this.getServersPanel(), "View a list of available servers.");
 //
 //		JPanel settingsPanel = new JPanel();
 //		mainPanel.addTab("Settings", null, settingsPanel, "Change game settings.");
 
-		return mainPanel;
-	}
-
-	private Container getConnectPanel() {
-		JPanel inputPanel = new JPanel(new GridBagLayout());
-		GridBagConstraints c = new GridBagConstraints();
-		c.insets = new Insets(5, 5, 5, 5);
-
-		c.gridx = 0;
-		c.gridy = 0;
-		inputPanel.add(new JLabel("Address"), c);
-		JTextField addressField = new JTextField(20);
-		c.gridx = 1;
-		inputPanel.add(addressField, c);
-
-		c.gridy = 1;
-		c.gridx = 0;
-		inputPanel.add(new JLabel("Username"), c);
-		JTextField usernameField = new JTextField(20);
-		c.gridx = 1;
-		inputPanel.add(usernameField, c);
-
-		var enterListener = new KeyAdapter() {
-			@Override
-			public void keyPressed(KeyEvent e) {
-				if (e.getKeyCode() == KeyEvent.VK_ENTER) {
-					if (validateConnectInput(addressField, usernameField)) {
-						connect(addressField, usernameField);
-					}
-				}
-			}
-		};
-		addressField.addKeyListener(enterListener);
-		usernameField.addKeyListener(enterListener);
-
-		JPanel buttonPanel = new JPanel(new FlowLayout());
-		JButton cancelButton = new JButton("Cancel");
-		cancelButton.addActionListener(e -> this.dispose());
-		JButton connectButton = new JButton("Connect");
-		connectButton.addActionListener(e -> {
-			if (validateConnectInput(addressField, usernameField)) {
-				connect(addressField, usernameField);
-			}
-		});
-		buttonPanel.add(cancelButton);
-		buttonPanel.add(connectButton);
-
-		JPanel mainPanel = new JPanel(new BorderLayout());
-		mainPanel.add(new JLabel("Directly connect to a server and play."), BorderLayout.NORTH);
-		mainPanel.add(inputPanel, BorderLayout.CENTER);
-		mainPanel.add(buttonPanel, BorderLayout.SOUTH);
 		return mainPanel;
 	}
 
@@ -144,14 +92,74 @@ public class Launcher extends JFrame {
 
 		JPanel buttonPanel = new JPanel();
 		JButton addServerButton = new JButton("Add Server");
+		addServerButton.setToolTipText("Add a new server to the list.");
 		addServerButton.addActionListener(e -> {
 			// TODO: Add server dialog.
 		});
 		buttonPanel.add(addServerButton);
+		JButton directConnectButton = new JButton("Direct Connect");
+		directConnectButton.setToolTipText("Connect to any server directly.");
+		directConnectButton.addActionListener(e -> {
+			JDialog dialog = new JDialog(this, true);
+			dialog.setTitle("Direct Connect");
+			dialog.setContentPane(getConnectPanel(dialog));
+			dialog.pack();
+			dialog.setLocationRelativeTo(this);
+			dialog.setVisible(true);
+		});
+		buttonPanel.add(directConnectButton);
+
+		JButton helpButton = new JButton("Help");
+		helpButton.setToolTipText("Show some helpful information for using this program.");
+		helpButton.addActionListener(e -> {
+			String uri = "https://github.com/andrewlalis/AceOfShades/blob/main/help.md";
+			try {
+				Desktop.getDesktop().browse(new URI(uri));
+			} catch (IOException | URISyntaxException ex) {
+				ex.printStackTrace();
+				JOptionPane.showMessageDialog(this, "Could not open URI in browser. For help, please visit\n" + uri, "Error", JOptionPane.WARNING_MESSAGE);
+			}
+		});
+		buttonPanel.add(helpButton);
 
 		panel.add(buttonPanel, BorderLayout.SOUTH);
 
 		return panel;
+	}
+
+	private Container getConnectPanel(JDialog dialog) {
+		JPanel inputPanel = new JPanel(new GridBagLayout());
+		GridBagConstraints c = new GridBagConstraints();
+		c.insets = new Insets(5, 5, 5, 5);
+
+		c.gridx = 0;
+		c.gridy = 0;
+		inputPanel.add(new JLabel("Address"), c);
+		JTextField addressField = new JTextField(20);
+		c.gridx = 1;
+		inputPanel.add(addressField, c);
+
+		c.gridy = 1;
+		c.gridx = 0;
+		inputPanel.add(new JLabel("Username"), c);
+		JTextField usernameField = new JTextField(20);
+		c.gridx = 1;
+		inputPanel.add(usernameField, c);
+
+		JPanel buttonPanel = new JPanel(new FlowLayout());
+		JButton connectButton = new JButton("Connect");
+		connectButton.addActionListener(e -> {
+			if (validateConnectInput(addressField, usernameField)) {
+				dialog.dispose();
+				connect(new ServerInfo("Unknown", addressField.getText(), usernameField.getText()));
+			}
+		});
+		buttonPanel.add(connectButton);
+
+		JPanel mainPanel = new JPanel(new BorderLayout());
+		mainPanel.add(inputPanel, BorderLayout.CENTER);
+		mainPanel.add(buttonPanel, BorderLayout.SOUTH);
+		return mainPanel;
 	}
 
 	private boolean validateConnectInput(JTextField addressField, JTextField usernameField) {
@@ -177,20 +185,6 @@ public class Launcher extends JFrame {
 			);
 		}
 		return warnings.isEmpty();
-	}
-
-	private void connect(JTextField addressField, JTextField usernameField) {
-		String hostAndPort = addressField.getText();
-		String[] parts = hostAndPort.split(":");
-		String host = parts[0].trim();
-		int port = Integer.parseInt(parts[1]);
-		String username = usernameField.getText();
-		try {
-			new Client(host, port, username);
-		} catch (IOException ex) {
-			ex.printStackTrace();
-			JOptionPane.showMessageDialog(null, "Could not connect:\n" + ex.getMessage(), "Connection Error", JOptionPane.WARNING_MESSAGE);
-		}
 	}
 
 	private void connect(ServerInfo serverInfo) {
