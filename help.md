@@ -29,6 +29,8 @@ To control your player in-game, the following are the default controls:
 ## Basic Mechanics
 In most scenarios, when you join a server, you'll be placed onto a *team*. Each team has a spawn point, which is where you'll start out. There's also a resupply area for each team, where you can replenish your health and ammunition when running low.
 
+> You can only resupply once in a while. Different servers may set their own rules, but the default is **30 seconds**.
+
 Each time you kill someone from another team, your own team's score increases. Different servers may come up with different rules for what constitutes a victory, but the premise is simple: **kill as many enemies as possible**.
 
 You can quit at any time by closing the game window.
