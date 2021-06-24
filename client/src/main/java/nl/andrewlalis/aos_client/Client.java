@@ -1,6 +1,5 @@
 package nl.andrewlalis.aos_client;
 
-import nl.andrewlalis.aos_client.view.ConnectDialog;
 import nl.andrewlalis.aos_client.view.GameFrame;
 import nl.andrewlalis.aos_client.view.GamePanel;
 import nl.andrewlalis.aos_core.model.Player;
@@ -121,12 +120,5 @@ public class Client {
 		this.soundManager.close();
 		System.out.println("Sound manager closed.");
 		this.frame.dispose();
-	}
-
-
-
-	public static void main(String[] args) {
-		ConnectDialog dialog = new ConnectDialog();
-		dialog.setVisible(true);
 	}
 }
