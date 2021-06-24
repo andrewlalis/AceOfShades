@@ -1,9 +1,7 @@
 package nl.andrewlalis.aos_client.launcher;
 
 import nl.andrewlalis.aos_client.Client;
-import nl.andrewlalis.aos_client.launcher.servers.ServerInfo;
-import nl.andrewlalis.aos_client.launcher.servers.ServerInfoCellRenderer;
-import nl.andrewlalis.aos_client.launcher.servers.ServerInfoListModel;
+import nl.andrewlalis.aos_client.launcher.servers.*;
 
 import javax.swing.*;
 import java.awt.*;
@@ -12,6 +10,7 @@ import java.awt.event.MouseEvent;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
@@ -22,7 +21,9 @@ import java.util.regex.Pattern;
  * the menu that the user interacts with before joining a game.
  */
 public class Launcher extends JFrame {
-	private static final Pattern addressPattern = Pattern.compile("(.+):(\\d+)");
+	public static final Pattern addressPattern = Pattern.compile("(.+):(\\d+)");
+	public static final Path DATA_DIR = Path.of(System.getProperty("user.home"), "ace-of-shades");
+	public static final Pattern usernamePattern = Pattern.compile("[a-zA-Z0-9_-]+");
 
 	public Launcher() throws HeadlessException {
 		super("Ace of Shades - Launcher");
@@ -36,9 +37,6 @@ public class Launcher extends JFrame {
 	private Container buildContent() {
 		JTabbedPane mainPanel = new JTabbedPane(SwingConstants.TOP, JTabbedPane.SCROLL_TAB_LAYOUT);
 		mainPanel.addTab("Servers", null, this.getServersPanel(), "View a list of available servers.");
-//
-//		JPanel settingsPanel = new JPanel();
-//		mainPanel.addTab("Settings", null, settingsPanel, "Change game settings.");
 
 		return mainPanel;
 	}
@@ -47,8 +45,6 @@ public class Launcher extends JFrame {
 		JPanel panel = new JPanel(new BorderLayout());
 
 		ServerInfoListModel listModel = new ServerInfoListModel();
-		listModel.add(new ServerInfo("one", "localhost:8035", "andrew"));
-		listModel.add(new ServerInfo("two", "localhost:25565", null));
 		JList<ServerInfo> serversList = new JList<>(listModel);
 		serversList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 		serversList.setCellRenderer(new ServerInfoCellRenderer());
@@ -68,8 +64,15 @@ public class Launcher extends JFrame {
 					menu.add(connectItem);
 					JMenuItem editItem = new JMenuItem("Edit");
 					editItem.addActionListener(a -> {
-						// TODO: Open edit dialog.
-						listModel.serverEdited();
+						EditServerDialog dialog = new EditServerDialog((Frame) SwingUtilities.getWindowAncestor(panel), server);
+						dialog.setVisible(true);
+						ServerInfo editedInfo = dialog.getServerInfo();
+						if (editedInfo != null) {
+							server.setName(editedInfo.getName());
+							server.setHost(editedInfo.getHost());
+							server.setUsername(editedInfo.getUsername());
+							listModel.serverEdited();
+						}
 					});
 					menu.add(editItem);
 					JMenuItem removeItem = new JMenuItem("Remove");
@@ -94,7 +97,12 @@ public class Launcher extends JFrame {
 		JButton addServerButton = new JButton("Add Server");
 		addServerButton.setToolTipText("Add a new server to the list.");
 		addServerButton.addActionListener(e -> {
-			// TODO: Add server dialog.
+			AddServerDialog dialog = new AddServerDialog(this);
+			dialog.setVisible(true);
+			ServerInfo server = dialog.getServerInfo();
+			if (server != null) {
+				listModel.add(server);
+			}
 		});
 		buttonPanel.add(addServerButton);
 		JButton directConnectButton = new JButton("Direct Connect");

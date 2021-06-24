@@ -1,8 +1,9 @@
 package nl.andrewlalis.aos_client.launcher.servers;
 
+import java.io.Serializable;
 import java.util.Objects;
 
-public class ServerInfo implements Comparable<ServerInfo> {
+public class ServerInfo implements Comparable<ServerInfo>, Serializable {
 	private String name;
 	private String host;
 	private String username;
