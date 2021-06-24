@@ -22,7 +22,7 @@ import java.util.regex.Pattern;
  */
 public class Launcher extends JFrame {
 	public static final Pattern addressPattern = Pattern.compile("(.+):(\\d+)");
-	public static final Path DATA_DIR = Path.of(System.getProperty("user.home"), "ace-of-shades");
+	public static final Path DATA_DIR = Path.of(System.getProperty("user.home"), ".ace-of-shades");
 	public static final Pattern usernamePattern = Pattern.compile("[a-zA-Z0-9_-]+");
 
 	public Launcher() throws HeadlessException {
