@@ -6,7 +6,7 @@ public class SystemChatMessage extends ChatMessage {
 	private final Level level;
 
 	public SystemChatMessage(Level level, String text) {
-		super(text);
+		super(text, ChatType.SYSTEM_MESSAGE);
 		this.level = level;
 	}
 

@@ -1,6 +1,7 @@
 package nl.andrewlalis.aos_server.command.chat;
 
 import nl.andrewlalis.aos_core.model.Player;
+import nl.andrewlalis.aos_core.net.chat.ChatType;
 import nl.andrewlalis.aos_core.net.chat.PlayerChatMessage;
 import nl.andrewlalis.aos_core.net.chat.SystemChatMessage;
 import nl.andrewlalis.aos_server.ClientHandler;
@@ -15,6 +16,7 @@ public class TeamChatCommand implements ChatCommand {
 			handler.send(new SystemChatMessage(SystemChatMessage.Level.WARNING, "You're not in a team, so you can't send team chat messages."));
 			return;
 		}
-		handler.getServer().sendTeamMessage(player.getTeam(), new PlayerChatMessage(player.getId(), String.join(" ", args)));
+		var msg = new PlayerChatMessage(player.getId(), player.getName() + ": " + String.join(" ", args), ChatType.TEAM_PLAYER_CHAT);
+		handler.getServer().sendTeamMessage(player.getTeam(), msg);
 	}
 }

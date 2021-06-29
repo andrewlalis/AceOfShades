@@ -1,10 +1,11 @@
 package nl.andrewlalis.aos_client.view;
 
+import nl.andrewlalis.aos_client.ChatManager;
 import nl.andrewlalis.aos_client.Client;
 import nl.andrewlalis.aos_core.model.*;
 import nl.andrewlalis.aos_core.model.tools.Gun;
 import nl.andrewlalis.aos_core.net.chat.ChatMessage;
-import nl.andrewlalis.aos_core.net.chat.PlayerChatMessage;
+import nl.andrewlalis.aos_core.net.chat.ChatType;
 import nl.andrewlalis.aos_core.net.chat.SystemChatMessage;
 
 import javax.swing.*;
@@ -51,7 +52,7 @@ public class GamePanel extends JPanel {
 			drawWorld(g2, world);
 			drawStatus(g2, world);
 		}
-		drawChat(g2, world);
+		drawChat(g2);
 	}
 
 	private void drawWorld(Graphics2D g2, World world) {
@@ -186,7 +187,7 @@ public class GamePanel extends JPanel {
 		}
 	}
 
-	private void drawChat(Graphics2D g2, World world) {
+	private void drawChat(Graphics2D g2) {
 		int height = g2.getFontMetrics().getHeight();
 		int y = height;
 		var cm = this.client.getChatManager();
@@ -201,13 +202,12 @@ public class GamePanel extends JPanel {
 				} else if (sysMsg.getLevel() == SystemChatMessage.Level.SEVERE) {
 					color = Color.RED;
 				}
-			} else if (message instanceof PlayerChatMessage pcm) {
-				String author = Integer.toString(pcm.getPlayerId());
-				if (world != null) {
-					Player p = world.getPlayers().get(pcm.getPlayerId());
-					if (p != null) author = p.getName();
+			} else {
+				if (message.getChatType() == ChatType.TEAM_PLAYER_CHAT) {
+					color = Color.GREEN;
+				} else if (message.getChatType() == ChatType.PRIVATE_PLAYER_CHAT) {
+					color = Color.CYAN;
 				}
-				text = author + ": " + text;
 			}
 			g2.setColor(color);
 			g2.drawString(text, 5, y);
@@ -216,7 +216,7 @@ public class GamePanel extends JPanel {
 
 		if (cm.isChatting()) {
 			g2.setColor(Color.WHITE);
-			g2.drawString("> " + cm.getCurrentChatBuffer(), 5, height * 11);
+			g2.drawString("> " + cm.getCurrentChatBuffer(), 5, height * (ChatManager.MAX_CHAT_MESSAGES + 1));
 		}
 	}
 

@@ -1,6 +1,7 @@
 package nl.andrewlalis.aos_client;
 
 import nl.andrewlalis.aos_core.net.chat.ChatMessage;
+import nl.andrewlalis.aos_core.net.chat.ChatType;
 import nl.andrewlalis.aos_core.net.chat.PlayerChatMessage;
 import nl.andrewlalis.aos_core.net.data.Sound;
 import nl.andrewlalis.aos_core.net.data.SoundType;
@@ -8,6 +9,15 @@ import nl.andrewlalis.aos_core.net.data.SoundType;
 import java.util.LinkedList;
 import java.util.List;
 
+/**
+ * This chat manager is responsible for storing the list of recent messages that
+ * the client has received, so that they can be displayed in the user interface.
+ * <p>
+ *     It is also responsible for managing the client's "chatting" state (if the
+ *     client is chatting or not), and uses a provided {@link MessageTransceiver}
+ *     to send chat messages to the server.
+ * </p>
+ */
 public class ChatManager {
 	public static final int MAX_CHAT_MESSAGES = 10;
 
@@ -34,7 +44,7 @@ public class ChatManager {
 
 	public synchronized void addChatMessage(ChatMessage message) {
 		this.chatMessages.add(message);
-		if (message.getClass() == PlayerChatMessage.class) {
+		if (message instanceof PlayerChatMessage) {
 			this.soundManager.play(new Sound(null, 1.0f, SoundType.CHAT));
 		}
 		while (this.chatMessages.size() > MAX_CHAT_MESSAGES) {
@@ -43,6 +53,7 @@ public class ChatManager {
 	}
 
 	public ChatMessage[] getLatestChatMessages() {
+		if (this.chatMessages.isEmpty()) return new ChatMessage[0];
 		return this.chatMessages.toArray(new ChatMessage[0]);
 	}
 
@@ -70,7 +81,7 @@ public class ChatManager {
 	public void sendChat() {
 		String message = this.chatBuffer.toString().trim();
 		if (!message.isBlank() && !message.equals("/") && this.messageTransceiver != null) {
-			this.messageTransceiver.send(new ChatMessage(message));
+			this.messageTransceiver.send(new ChatMessage(message, ChatType.PUBLIC_PLAYER_CHAT));
 		}
 		this.setChatting(false);
 	}

@@ -2,6 +2,7 @@ package nl.andrewlalis.aos_server;
 
 import nl.andrewlalis.aos_core.model.Player;
 import nl.andrewlalis.aos_core.net.chat.ChatMessage;
+import nl.andrewlalis.aos_core.net.chat.ChatType;
 import nl.andrewlalis.aos_core.net.chat.PlayerChatMessage;
 import nl.andrewlalis.aos_server.command.GunsCommand;
 import nl.andrewlalis.aos_server.command.ResetCommand;
@@ -44,7 +45,7 @@ public class ChatManager {
 				cmd.execute(handler, player, Arrays.copyOfRange(words, 1, words.length));
 			}
 		} else {
-			this.server.broadcastMessage(new PlayerChatMessage(player.getId(), msg.getText()));
+			this.server.broadcastMessage(new PlayerChatMessage(player.getId(), player.getName() + ": "+ msg.getText(), ChatType.PUBLIC_PLAYER_CHAT));
 		}
 	}
 }
