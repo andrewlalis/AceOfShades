@@ -2,6 +2,7 @@ package nl.andrewlalis.aos_core.net.data;
 
 import nl.andrewlalis.aos_core.model.Bullet;
 import nl.andrewlalis.aos_core.model.Player;
+import nl.andrewlalis.aos_core.model.Team;
 
 import java.io.*;
 import java.util.ArrayList;
@@ -20,21 +21,24 @@ import java.util.List;
 public class WorldUpdate {
 	private final List<PlayerUpdate> playerUpdates;
 	private final List<BulletUpdate> bulletUpdates;
+	private final List<TeamUpdate> teamUpdates;
 	private final List<Sound> soundsToPlay;
 
 	public WorldUpdate() {
-		this(new ArrayList<>(), new ArrayList<>(), new ArrayList<>());
+		this(new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>());
 	}
 
-	private WorldUpdate(List<PlayerUpdate> playerUpdates, List<BulletUpdate> bulletUpdates, List<Sound> soundsToPlay) {
+	private WorldUpdate(List<PlayerUpdate> playerUpdates, List<BulletUpdate> bulletUpdates, List<TeamUpdate> teamUpdates, List<Sound> soundsToPlay) {
 		this.playerUpdates = playerUpdates;
 		this.bulletUpdates = bulletUpdates;
+		this.teamUpdates = teamUpdates;
 		this.soundsToPlay = soundsToPlay;
 	}
 
 	public void clear() {
 		this.playerUpdates.clear();
 		this.bulletUpdates.clear();
+		this.teamUpdates.clear();
 		this.soundsToPlay.clear();
 	}
 
@@ -44,6 +48,10 @@ public class WorldUpdate {
 
 	public void addBullet(Bullet b) {
 		this.bulletUpdates.add(new BulletUpdate(b));
+	}
+
+	public void addTeam(Team team) {
+		this.teamUpdates.add(new TeamUpdate(team));
 	}
 
 	public void addSound(Sound sound) {
@@ -58,6 +66,10 @@ public class WorldUpdate {
 		return bulletUpdates;
 	}
 
+	public List<TeamUpdate> getTeamUpdates() {
+		return teamUpdates;
+	}
+
 	public List<Sound> getSoundsToPlay() {
 		return soundsToPlay;
 	}
@@ -66,6 +78,7 @@ public class WorldUpdate {
 		int size = 3 * Integer.BYTES + // List size integers.
 			this.playerUpdates.size() * PlayerUpdate.BYTES +
 			this.bulletUpdates.size() * BulletUpdate.BYTES +
+			this.teamUpdates.size() * TeamUpdate.BYTES +
 			this.soundsToPlay.size() * Sound.BYTES;
 		ByteArrayOutputStream out = new ByteArrayOutputStream(size);
 		DataOutputStream dataOut = new DataOutputStream(out);
@@ -75,6 +88,10 @@ public class WorldUpdate {
 		}
 		dataOut.writeInt(this.bulletUpdates.size());
 		for (var u : this.bulletUpdates) {
+			u.write(dataOut);
+		}
+		dataOut.writeInt(this.teamUpdates.size());
+		for (var u : this.teamUpdates) {
 			u.write(dataOut);
 		}
 		dataOut.writeInt(this.soundsToPlay.size());
@@ -100,12 +117,17 @@ public class WorldUpdate {
 		for (int i = 0; i < bullets; i++) {
 			bulletUpdates.add(BulletUpdate.read(dataIn));
 		}
+		int teams = dataIn.readInt();
+		List<TeamUpdate> teamUpdates = new ArrayList<>(teams);
+		for (int i = 0; i < teams; i++) {
+			teamUpdates.add(TeamUpdate.read(dataIn));
+		}
 		int sounds = dataIn.readInt();
 		List<Sound> soundsToPlay = new ArrayList<>(sounds);
 		for (int i = 0; i < sounds; i++) {
 			soundsToPlay.add(Sound.read(dataIn));
 		}
-		var obj = new WorldUpdate(playerUpdates, bulletUpdates, soundsToPlay);
+		var obj = new WorldUpdate(playerUpdates, bulletUpdates, teamUpdates, soundsToPlay);
 		dataIn.close();
 		return obj;
 	}

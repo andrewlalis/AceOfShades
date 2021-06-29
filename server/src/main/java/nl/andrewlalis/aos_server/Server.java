@@ -79,14 +79,16 @@ public class Server {
 		world.getBarricades().add(new Barricade(0, 30, 10, 10));
 		world.getBarricades().add(new Barricade(40, 30, 10, 10));
 
-		world.getTeams().add(new Team(
+		world.getTeams().put((byte) 1, new Team(
+			(byte) 1,
 			"Red",
 			Color.RED,
 			new Vec2(3, 3),
 			new Vec2(15, 3),
 			new Vec2(0, 1)
 		));
-		world.getTeams().add(new Team(
+		world.getTeams().put((byte) 2, new Team(
+			(byte) 2,
 			"Blue",
 			Color.BLUE,
 			new Vec2(world.getSize().x() - 3, world.getSize().y() - 3),
@@ -124,14 +126,14 @@ public class Server {
 	public Player registerNewPlayer(String name) {
 		int id = ThreadLocalRandom.current().nextInt(1, Integer.MAX_VALUE);
 		Team team = null;
-		for (Team t : this.world.getTeams()) {
+		for (Team t : this.world.getTeams().values()) {
 			if (team == null) {
 				team = t;
 			} else if (t.getPlayers().size() < team.getPlayers().size()) {
 				team = t;
 			}
 		}
-		Player p = new Player(id, name, team, this.world.getGunTypes().get(this.settings.getPlayerSettings().getDefaultGun()));
+		Player p = new Player(id, name, team, this.world.getGunTypes().get(this.settings.getPlayerSettings().getDefaultGun()), settings.getPlayerSettings().getMaxHealth());
 		this.world.getPlayers().put(p.getId(), p);
 		String message = p.getName() + " connected.";
 		this.broadcastMessage(new SystemChatMessage(SystemChatMessage.Level.INFO, message));
@@ -196,10 +198,11 @@ public class Server {
 	}
 
 	public void resetGame() {
-		for (Team t : this.world.getTeams()) {
+		for (Team t : this.world.getTeams().values()) {
 			t.resetScore();
 			for (Player p : t.getPlayers()) {
-				p.respawn();
+				p.resetStats();
+				p.respawn(settings.getPlayerSettings().getMaxHealth());
 			}
 		}
 		broadcastMessage(new SystemChatMessage(SystemChatMessage.Level.INFO, "Game has been reset."));
@@ -208,6 +211,14 @@ public class Server {
 	public void broadcastMessage(Message message) {
 		for (ClientHandler handler : this.clientHandlers) {
 			handler.send(message);
+		}
+	}
+
+	public void sendTeamMessage(Team team, Message message) {
+		for (ClientHandler handler : this.clientHandlers) {
+			if (team.equals(handler.getPlayer().getTeam())) {
+				handler.send(message);
+			}
 		}
 	}
 

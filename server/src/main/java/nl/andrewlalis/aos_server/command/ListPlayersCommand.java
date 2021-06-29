@@ -26,7 +26,7 @@ public class ListPlayersCommand implements Command {
 				player.getName(),
 				player.getTeam() == null ? "none" : player.getTeam().getName(),
 				player.getHealth(),
-				Player.MAX_HEALTH,
+				this.server.getSettings().getPlayerSettings().getMaxHealth(),
 				player.getGun().getType().getName()
 			))
 			.collect(Collectors.joining("\n"));

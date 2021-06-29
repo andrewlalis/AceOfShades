@@ -110,7 +110,7 @@ public class GamePanel extends JPanel {
 			g2.fill(barricadeRect);
 		}
 
-		for (Team t : world.getTeams()) {
+		for (Team t : world.getTeams().values()) {
 			g2.setColor(t.getColor());
 			Ellipse2D.Double spawnCircle = new Ellipse2D.Double(
 				t.getSpawnPoint().x() - Team.SPAWN_RADIUS,
@@ -231,17 +231,11 @@ public class GamePanel extends JPanel {
 		Gun gun = myPlayer.getGun();
 		g2.drawString("Clips: " + gun.getClipCount() + " / " + gun.getType().getMaxClipCount(), 5, this.getHeight() - 20);
 		g2.drawString("Bullets: " + gun.getCurrentClipBulletCount() + " / " + gun.getType().getClipSize(), 5, this.getHeight() - 30);
-		if (myPlayer.getHealth() >= 66.0f) {
-			g2.setColor(Color.GREEN);
-		} else if (myPlayer.getHealth() >= 33.0f) {
-			g2.setColor(Color.YELLOW);
-		} else {
-			g2.setColor(Color.RED);
-		}
-		g2.drawString(String.format("Health: %.1f / %.1f", myPlayer.getHealth(), Player.MAX_HEALTH), 5, this.getHeight() - 40);
+		g2.setColor(Color.GREEN);
+		g2.drawString(String.format("Health: %.1f", myPlayer.getHealth()), 5, this.getHeight() - 40);
 
 		int y = this.getHeight() - 60;
-		for (Team t : world.getTeams()) {
+		for (Team t : world.getTeams().values()) {
 			g2.setColor(t.getColor());
 			g2.drawString("Team " + t.getName() + ": " + t.getScore(), 5, y);
 			y -= 15;

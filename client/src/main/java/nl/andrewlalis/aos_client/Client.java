@@ -3,6 +3,7 @@ package nl.andrewlalis.aos_client;
 import nl.andrewlalis.aos_client.view.GameFrame;
 import nl.andrewlalis.aos_client.view.GamePanel;
 import nl.andrewlalis.aos_core.model.Player;
+import nl.andrewlalis.aos_core.model.Team;
 import nl.andrewlalis.aos_core.model.World;
 import nl.andrewlalis.aos_core.model.tools.Gun;
 import nl.andrewlalis.aos_core.net.data.DataTypes;
@@ -71,6 +72,12 @@ public class Client {
 				player.setOrientation(p.getOrientation());
 				player.setVelocity(p.getVelocity());
 				player.setGun(new Gun(this.world.getGunTypes().get(p.getGunTypeName())));
+			}
+		}
+		for (var t : update.getTeamUpdates()) {
+			Team team = this.world.getTeams().get(t.getId());
+			if (team != null) {
+				team.setScore(t.getScore());
 			}
 		}
 		this.soundManager.play(update.getSoundsToPlay());

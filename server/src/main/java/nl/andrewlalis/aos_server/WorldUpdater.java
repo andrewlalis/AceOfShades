@@ -72,7 +72,7 @@ public class WorldUpdater extends Thread {
 		for (Player p : this.world.getPlayers().values()) {
 			this.updatePlayerMovement(p, t);
 			this.updatePlayerShooting(p);
-			p.setHealth(Math.min(p.getHealth() + Player.HEALTH_REGEN_RATE * t, Player.MAX_HEALTH));
+			p.setHealth(Math.min(p.getHealth() + server.getSettings().getPlayerSettings().getHealthRegenRate() * t, server.getSettings().getPlayerSettings().getMaxHealth()));
 			this.worldUpdate.addPlayer(p);
 		}
 	}
@@ -97,31 +97,33 @@ public class WorldUpdater extends Thread {
 		Vec2 localVelocity = p.getVelocity().rotate(-left.angle());
 		float vx = localVelocity.x();
 		float vy = localVelocity.y();
+		float a = server.getSettings().getPlayerSettings().getAcceleration();
 		if (p.getState().isMovingForward()) {
-			vy -= Player.MOVEMENT_ACCELERATION * t;
+			vy -= a * t;
 		}
 		if (p.getState().isMovingBackward()) {
-			vy += Player.MOVEMENT_ACCELERATION * t;
+			vy += a * t;
 		}
 		if (p.getState().isMovingLeft()) {
-			vx -= Player.MOVEMENT_ACCELERATION * t;
+			vx -= a * t;
 		}
 		if (p.getState().isMovingRight()) {
-			vx += Player.MOVEMENT_ACCELERATION * t;
+			vx += a * t;
 		}
 		// Compute deceleration.
+		float d = server.getSettings().getPlayerSettings().getDeceleration();
 		if (p.getState().isMovingForward() == p.getState().isMovingBackward()) {
 			if (vy > 0) {
-				vy = Math.max(0.0f, vy - Player.MOVEMENT_DECELERATION * t);
+				vy = Math.max(0.0f, vy - d * t);
 			} else {
-				vy = Math.min(0.0f, vy + Player.MOVEMENT_DECELERATION * t);
+				vy = Math.min(0.0f, vy + d * t);
 			}
 		}
 		if (p.getState().isMovingLeft() == p.getState().isMovingRight()) {
 			if (vx > 0) {
-				vx = Math.max(0.0f, vx - Player.MOVEMENT_DECELERATION * t);
+				vx = Math.max(0.0f, vx - d * t);
 			} else {
-				vx = Math.min(0.0f, vx + Player.MOVEMENT_DECELERATION * t);
+				vx = Math.min(0.0f, vx + d * t);
 			}
 		}
 
@@ -132,11 +134,11 @@ public class WorldUpdater extends Thread {
 		}
 		float speedLimit;
 		if (p.isSprinting()) {
-			speedLimit = Player.MOVEMENT_SPEED_SPRINT;
+			speedLimit = server.getSettings().getPlayerSettings().getSprintSpeed();
 		} else if (p.isSneaking()) {
-			speedLimit = Player.MOVEMENT_SPEED_SNEAK;
+			speedLimit = server.getSettings().getPlayerSettings().getSneakSpeed();
 		} else {
-			speedLimit = Player.MOVEMENT_SPEED;
+			speedLimit = server.getSettings().getPlayerSettings().getSpeed();
 		}
 		if (newLocalVelocity.mag() > speedLimit) {
 			newLocalVelocity = newLocalVelocity.mul(speedLimit / newLocalVelocity.mag());
@@ -176,15 +178,15 @@ public class WorldUpdater extends Thread {
 		if (ny + Player.RADIUS > this.world.getSize().y()) ny = this.world.getSize().y() - Player.RADIUS;
 		p.setPosition(new Vec2(nx, ny));
 
-		if (p.canResupply()) {
-			p.resupply();
+		if (p.canResupply(server.getSettings().getPlayerSettings().getResupplyCooldown())) {
+			p.resupply(server.getSettings().getPlayerSettings().getMaxHealth());
 		}
 	}
 
 	private void updatePlayerShooting(Player p) {
 		if (p.canUseWeapon()) {
 			for (int i = 0; i < p.getGun().getType().getBulletsPerRound(); i++) {
-				Bullet b = new Bullet(p);
+				Bullet b = new Bullet(p, server.getSettings().getPlayerSettings().getSneakAccuracyModifier(), server.getSettings().getPlayerSettings().getSprintAccuracyModifier());
 				this.world.getBullets().add(b);
 				this.worldUpdate.addBullet(b);
 			}
@@ -256,10 +258,13 @@ public class WorldUpdater extends Thread {
 						Player shooter = this.world.getPlayers().get(b.getPlayerId());
 						this.server.broadcastMessage(new SystemChatMessage(SystemChatMessage.Level.SEVERE, p.getName() + " was shot by " + shooter.getName() + "."));
 						this.worldUpdate.addSound(new Sound(p.getPosition(), 1.0f, SoundType.DEATH));
+						shooter.incrementKillCount();
 						if (shooter.getTeam() != null) {
 							shooter.getTeam().incrementScore();
+							this.worldUpdate.addTeam(shooter.getTeam());
 						}
-						p.respawn();
+						p.incrementDeathCount();
+						p.respawn(server.getSettings().getPlayerSettings().getMaxHealth());
 					}
 				}
 			}

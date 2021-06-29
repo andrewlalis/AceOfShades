@@ -7,6 +7,8 @@ import nl.andrewlalis.aos_server.command.GunsCommand;
 import nl.andrewlalis.aos_server.command.ResetCommand;
 import nl.andrewlalis.aos_server.command.chat.ChatCommand;
 import nl.andrewlalis.aos_server.command.chat.GunCommand;
+import nl.andrewlalis.aos_server.command.chat.KillDeathRatioCommand;
+import nl.andrewlalis.aos_server.command.chat.TeamChatCommand;
 
 import java.util.Arrays;
 import java.util.Map;
@@ -27,6 +29,8 @@ public class ChatManager {
 		this.chatCommands.put("gun", new GunCommand());
 		this.chatCommands.put("reset", new ResetCommand(server));
 		this.chatCommands.put("guns", new GunsCommand(server));
+		this.chatCommands.put("kd", new KillDeathRatioCommand());
+		this.chatCommands.put("t", new TeamChatCommand());
 	}
 
 	public void handlePlayerChat(ClientHandler handler, Player player, ChatMessage msg) {

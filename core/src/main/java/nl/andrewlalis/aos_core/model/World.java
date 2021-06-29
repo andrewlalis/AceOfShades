@@ -16,7 +16,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 public class World implements Serializable {
 	private final Vec2 size;
 
-	private final List<Team> teams;
+	private final Map<Byte, Team> teams;
 	private final Map<String, GunType> gunTypes;
 	private final Map<Integer, Player> players;
 	private final List<Bullet> bullets;
@@ -24,7 +24,7 @@ public class World implements Serializable {
 
 	public World(Vec2 size) {
 		this.size = size;
-		this.teams = new ArrayList<>();
+		this.teams = new ConcurrentHashMap<>();
 		this.gunTypes = new ConcurrentHashMap<>();
 		this.players = new ConcurrentHashMap<>();
 		this.bullets = new CopyOnWriteArrayList<>();
@@ -35,7 +35,7 @@ public class World implements Serializable {
 		return size;
 	}
 
-	public List<Team> getTeams() {
+	public Map<Byte, Team> getTeams() {
 		return teams;
 	}
 

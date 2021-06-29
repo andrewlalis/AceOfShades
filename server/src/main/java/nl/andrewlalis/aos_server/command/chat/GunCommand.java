@@ -12,7 +12,7 @@ public class GunCommand implements ChatCommand {
 	@Override
 	public void execute(ClientHandler handler, Player player, String[] args) {
 		if (args.length < 1) {
-			handler.send(new SystemChatMessage(SystemChatMessage.Level.WARNING, "No gun name specified."));
+			handler.send(new SystemChatMessage(SystemChatMessage.Level.WARNING, "No gun name specified. Use /guns to see available guns."));
 			return;
 		}
 		String gunName = String.join(" ", args);
@@ -24,7 +24,7 @@ public class GunCommand implements ChatCommand {
 			}
 		}
 		if (gunType == null) {
-			handler.send(new SystemChatMessage(SystemChatMessage.Level.WARNING, "Unknown gun name."));
+			handler.send(new SystemChatMessage(SystemChatMessage.Level.WARNING, "Unknown gun name. Use /guns to see available guns."));
 			return;
 		}
 		player.setGun(new Gun(gunType));
