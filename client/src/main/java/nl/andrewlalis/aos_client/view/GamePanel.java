@@ -3,7 +3,6 @@ package nl.andrewlalis.aos_client.view;
 import nl.andrewlalis.aos_client.Client;
 import nl.andrewlalis.aos_core.model.*;
 import nl.andrewlalis.aos_core.model.tools.Gun;
-import nl.andrewlalis.aos_core.model.tools.GunType;
 import nl.andrewlalis.aos_core.net.chat.ChatMessage;
 import nl.andrewlalis.aos_core.net.chat.PlayerChatMessage;
 import nl.andrewlalis.aos_core.net.chat.SystemChatMessage;
@@ -148,12 +147,7 @@ public class GamePanel extends JPanel {
 	}
 
 	private void drawGun(Graphics2D g2, Gun gun) {
-		g2.setColor(Color.GRAY);
-		if (gun.getType() == GunType.RIFLE) {
-			g2.setColor(new Color(59, 43, 0));
-		} else if (gun.getType() == GunType.SHOTGUN) {
-			g2.setColor(new Color(18, 18, 17));
-		}
+		g2.setColor(Color.decode(gun.getType().getColor()));
 		Rectangle2D.Double gunBarrel = new Rectangle2D.Double(
 			0,
 			0.5,
@@ -235,8 +229,8 @@ public class GamePanel extends JPanel {
 			g2.drawString("Reloading...", 5, this.getHeight() - 10);
 		}
 		Gun gun = myPlayer.getGun();
-		g2.drawString("Clips: " + gun.getClipCount() + " / " + gun.getMaxClipCount(), 5, this.getHeight() - 20);
-		g2.drawString("Bullets: " + gun.getCurrentClipBulletCount() + " / " + gun.getClipSize(), 5, this.getHeight() - 30);
+		g2.drawString("Clips: " + gun.getClipCount() + " / " + gun.getType().getMaxClipCount(), 5, this.getHeight() - 20);
+		g2.drawString("Bullets: " + gun.getCurrentClipBulletCount() + " / " + gun.getType().getClipSize(), 5, this.getHeight() - 30);
 		if (myPlayer.getHealth() >= 66.0f) {
 			g2.setColor(Color.GREEN);
 		} else if (myPlayer.getHealth() >= 33.0f) {

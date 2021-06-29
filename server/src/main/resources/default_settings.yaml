@@ -1,0 +1,63 @@
+port: 8035
+max-players: 32
+ticks-per-second: 120
+
+# Settings that control player behavior.
+player-settings:
+  speed: 10
+  sprint-speed: 18
+  sneak-speed: 5
+  acceleration: 60
+  deceleration: 30
+  radius: 0.5
+  resupply-cooldown: 30
+  max-health: 100
+  health-regen-rate: 1.0
+  sneak-accuracy-modifier: 0.5
+  sprint-accuracy-modifier: 1.5
+  # Should be the name of one of the guns defined in "gun-settings".
+  default-gun: M1 Garand
+
+# Settings for team mechanics.
+team-settings:
+  spawn-point-radius: 3
+  supply-point-radius: 2
+  friendly-fire: false
+
+# The list of available guns are defined in this list.
+gun-settings:
+  - name: AK-47
+    category: SMG
+    color: "#2e2b26"
+    max-clip-count: 4
+    clip-size: 30
+    bullets-per-round: 1
+    accuracy: 0.10
+    shot-cooldown-time: 0.05
+    reload-time: 1.2
+    bullet-speed: 90
+    base-damage: 40
+
+  - name: M1 Garand
+    category: RIFLE
+    color: "#452d06"
+    max-clip-count: 10
+    clip-size: 8
+    bullets-per-round: 1
+    accuracy: 0.02
+    shot-cooldown-time: 0.75
+    reload-time: 0.75
+    bullet-speed: 150
+    base-damage: 100
+
+  - name: Winchester
+    category: SHOTGUN
+    color: "#1a1205"
+    max-clip-count: 8
+    clip-size: 6
+    bullets-per-round: 3
+    accuracy: 0.15
+    shot-cooldown-time: 0.5
+    reload-time: 2.0
+    bullet-speed: 75
+    base-damage: 80

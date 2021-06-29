@@ -7,6 +7,9 @@ import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 
 public record Vec2(float x, float y) implements Serializable {
+	public static final Vec2 ZERO = new Vec2(0, 0);
+	public static final Vec2 UP = new Vec2(0, -1);
+
 
 	public float mag() {
 		return (float) Math.sqrt(x * x + y * y);

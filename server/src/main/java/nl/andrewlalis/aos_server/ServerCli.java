@@ -27,6 +27,7 @@ public class ServerCli extends Thread {
 
 		this.commands.put("list", new ListPlayersCommand(server));
 		this.commands.put("kick", new KickCommand(server));
+		this.commands.put("guns", new GunsCommand(server));
 	}
 
 	public void shutdown() {

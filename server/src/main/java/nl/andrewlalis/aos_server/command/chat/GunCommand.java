@@ -2,23 +2,32 @@ package nl.andrewlalis.aos_server.command.chat;
 
 import nl.andrewlalis.aos_core.model.Player;
 import nl.andrewlalis.aos_core.model.tools.Gun;
+import nl.andrewlalis.aos_core.model.tools.GunType;
 import nl.andrewlalis.aos_core.net.chat.SystemChatMessage;
 import nl.andrewlalis.aos_server.ClientHandler;
+
+import java.util.Locale;
 
 public class GunCommand implements ChatCommand {
 	@Override
 	public void execute(ClientHandler handler, Player player, String[] args) {
 		if (args.length < 1) {
+			handler.send(new SystemChatMessage(SystemChatMessage.Level.WARNING, "No gun name specified."));
 			return;
 		}
-		String gunName = args[0];
-		if (gunName.equalsIgnoreCase("smg")) {
-			player.setGun(Gun.ak47());
-		} else if (gunName.equalsIgnoreCase("rifle")) {
-			player.setGun(Gun.m1Garand());
-		} else if (gunName.equalsIgnoreCase("shotgun")) {
-			player.setGun(Gun.winchester());
+		String gunName = String.join(" ", args);
+		GunType gunType = null;
+		for (GunType type : handler.getServer().getWorld().getGunTypes().values()) {
+			if (type.getName().equalsIgnoreCase(gunName)) {
+				gunType = type;
+				break;
+			}
 		}
-		handler.send(new SystemChatMessage(SystemChatMessage.Level.INFO, "Changed gun to " + player.getGun().getType().name() + "."));
+		if (gunType == null) {
+			handler.send(new SystemChatMessage(SystemChatMessage.Level.WARNING, "Unknown gun name."));
+			return;
+		}
+		player.setGun(new Gun(gunType));
+		handler.send(new SystemChatMessage(SystemChatMessage.Level.INFO, "Changed gun to " + player.getGun().getType().getName() + "."));
 	}
 }

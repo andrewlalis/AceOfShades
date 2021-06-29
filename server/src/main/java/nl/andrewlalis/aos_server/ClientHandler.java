@@ -1,10 +1,7 @@
 package nl.andrewlalis.aos_server;
 
 import nl.andrewlalis.aos_core.model.Player;
-import nl.andrewlalis.aos_core.net.IdentMessage;
-import nl.andrewlalis.aos_core.net.Message;
-import nl.andrewlalis.aos_core.net.PlayerRegisteredMessage;
-import nl.andrewlalis.aos_core.net.Type;
+import nl.andrewlalis.aos_core.net.*;
 import nl.andrewlalis.aos_core.net.chat.ChatMessage;
 
 import java.io.EOFException;
@@ -53,6 +50,10 @@ public class ClientHandler extends Thread {
 	 * @throws IOException If initialization could not be completed.
 	 */
 	private void initializeConnection() throws IOException {
+		if (this.server.getPlayerCount() > this.server.getSettings().getMaxPlayers()) {
+			this.send(new ConnectionRejectedMessage("Server is full."));
+			throw new IOException("Client cannot join because server is full.");
+		}
 		boolean connectionEstablished = false;
 		int attempts = 0;
 		while (!connectionEstablished && attempts < 100) {
@@ -72,6 +73,10 @@ public class ClientHandler extends Thread {
 		if (!connectionEstablished) {
 			throw new IOException("Could not establish connection after " + attempts + " attempts.");
 		}
+	}
+
+	public Server getServer() {
+		return server;
 	}
 
 	public Player getPlayer() {
@@ -132,7 +137,7 @@ public class ClientHandler extends Thread {
 					this.server.getChatManager().handlePlayerChat(this, this.player, (ChatMessage) msg);
 				}
 			} catch (SocketException e) {
-				if (e.getMessage().equals("Socket closed")) {
+				if (e.getMessage().equals("Socket closed") | e.getMessage().equals("Connection reset")) {
 					this.shutdown();
 				} else {
 					e.printStackTrace();

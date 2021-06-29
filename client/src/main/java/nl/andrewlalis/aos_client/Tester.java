@@ -9,7 +9,7 @@ public class Tester {
 	};
 
 	public static void main(String[] args) {
-		for (int i = 0; i < 1; i++) {
+		for (int i = 0; i < 2; i++) {
 			try {
 				new Client("localhost", 8035, names[ThreadLocalRandom.current().nextInt(names.length)]);
 			} catch (IOException e) {

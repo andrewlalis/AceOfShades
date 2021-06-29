@@ -54,6 +54,8 @@ public class MessageTransceiver extends Thread {
 					this.client.setPlayer(msg.getPlayer());
 					this.client.setWorld(msg.getWorld());
 					established = true;
+				} else if (obj instanceof ConnectionRejectedMessage msg) {
+					throw new IOException(msg.getMessage());
 				}
 			} catch (ClassNotFoundException e) {
 				e.printStackTrace();

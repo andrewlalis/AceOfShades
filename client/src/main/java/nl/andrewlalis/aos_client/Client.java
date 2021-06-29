@@ -70,7 +70,7 @@ public class Client {
 				player.setPosition(p.getPosition());
 				player.setOrientation(p.getOrientation());
 				player.setVelocity(p.getVelocity());
-				player.setGun(Gun.forType(p.getGunType()));
+				player.setGun(new Gun(this.world.getGunTypes().get(p.getGunTypeName())));
 			}
 		}
 		this.soundManager.play(update.getSoundsToPlay());
@@ -92,14 +92,7 @@ public class Client {
 		if (this.myPlayer == null) return;
 		this.myPlayer.setHealth(update.getHealth());
 		this.myPlayer.setReloading(update.isReloading());
-		this.myPlayer.setGun(Gun.forType(
-			this.myPlayer.getGun().getType(),
-			update.getGunMaxClipCount(),
-			update.getGunClipSize(),
-			update.getGunBulletsPerRound(),
-			update.getGunCurrentClipBulletCount(),
-			update.getGunClipCount()
-		));
+		this.myPlayer.setGun(new Gun(this.myPlayer.getGun().getType(), update.getGunCurrentClipBulletCount(), update.getGunClipCount()));
 	}
 
 	public void sendPlayerState() {

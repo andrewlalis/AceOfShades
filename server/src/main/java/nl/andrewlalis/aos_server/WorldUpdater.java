@@ -2,7 +2,7 @@ package nl.andrewlalis.aos_server;
 
 import nl.andrewlalis.aos_core.geom.Vec2;
 import nl.andrewlalis.aos_core.model.*;
-import nl.andrewlalis.aos_core.model.tools.GunType;
+import nl.andrewlalis.aos_core.model.tools.GunCategory;
 import nl.andrewlalis.aos_core.net.chat.SystemChatMessage;
 import nl.andrewlalis.aos_core.net.data.Sound;
 import nl.andrewlalis.aos_core.net.data.SoundType;
@@ -12,6 +12,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
+/**
+ * The world updater thread is responsible for periodically updating the server
+ * world data in a "tick" method. At each tick, we compute physics updates for
+ * every player, bullet, and other movable object in the world, and check for
+ * various interactions.
+ */
 public class WorldUpdater extends Thread {
 	public static final double TARGET_TPS = 120.0;
 	public static final double MS_PER_TICK = 1000.0 / TARGET_TPS;
@@ -66,6 +72,7 @@ public class WorldUpdater extends Thread {
 		for (Player p : this.world.getPlayers().values()) {
 			this.updatePlayerMovement(p, t);
 			this.updatePlayerShooting(p);
+			p.setHealth(Math.min(p.getHealth() + Player.HEALTH_REGEN_RATE * t, Player.MAX_HEALTH));
 			this.worldUpdate.addPlayer(p);
 		}
 	}
@@ -79,18 +86,64 @@ public class WorldUpdater extends Thread {
 			}
 			p.setOrientation(newOrientation);
 		}
-		float vx = 0;
-		float vy = 0;
-		if (p.getState().isMovingForward()) vy += Player.MOVEMENT_SPEED;
-		if (p.getState().isMovingBackward()) vy -= Player.MOVEMENT_SPEED;
-		if (p.getState().isMovingLeft()) vx -= Player.MOVEMENT_SPEED;
-		if (p.getState().isMovingRight()) vx += Player.MOVEMENT_SPEED;
-		Vec2 forwardVector = new Vec2(0, -1);
+
+		Vec2 forward = Vec2.UP;
 		if (p.getTeam() != null) {
-			forwardVector = p.getTeam().getOrientation();
+			forward = p.getTeam().getOrientation();
 		}
-		Vec2 leftVector = forwardVector.perp();
-		Vec2 newPos = p.getPosition().add(forwardVector.mul(vy * t)).add(leftVector.mul(vx * t));
+		Vec2 left = forward.perp();
+
+		// Compute changes to player velocity due to control input.
+		Vec2 localVelocity = p.getVelocity().rotate(-left.angle());
+		float vx = localVelocity.x();
+		float vy = localVelocity.y();
+		if (p.getState().isMovingForward()) {
+			vy -= Player.MOVEMENT_ACCELERATION * t;
+		}
+		if (p.getState().isMovingBackward()) {
+			vy += Player.MOVEMENT_ACCELERATION * t;
+		}
+		if (p.getState().isMovingLeft()) {
+			vx -= Player.MOVEMENT_ACCELERATION * t;
+		}
+		if (p.getState().isMovingRight()) {
+			vx += Player.MOVEMENT_ACCELERATION * t;
+		}
+		// Compute deceleration.
+		if (p.getState().isMovingForward() == p.getState().isMovingBackward()) {
+			if (vy > 0) {
+				vy = Math.max(0.0f, vy - Player.MOVEMENT_DECELERATION * t);
+			} else {
+				vy = Math.min(0.0f, vy + Player.MOVEMENT_DECELERATION * t);
+			}
+		}
+		if (p.getState().isMovingLeft() == p.getState().isMovingRight()) {
+			if (vx > 0) {
+				vx = Math.max(0.0f, vx - Player.MOVEMENT_DECELERATION * t);
+			} else {
+				vx = Math.min(0.0f, vx + Player.MOVEMENT_DECELERATION * t);
+			}
+		}
+
+
+		Vec2 newLocalVelocity = new Vec2(vx, vy);
+		if (newLocalVelocity.mag() < Player.MOVEMENT_THRESHOLD) {
+			newLocalVelocity = Vec2.ZERO;
+		}
+		float speedLimit;
+		if (p.isSprinting()) {
+			speedLimit = Player.MOVEMENT_SPEED_SPRINT;
+		} else if (p.isSneaking()) {
+			speedLimit = Player.MOVEMENT_SPEED_SNEAK;
+		} else {
+			speedLimit = Player.MOVEMENT_SPEED;
+		}
+		if (newLocalVelocity.mag() > speedLimit) {
+			newLocalVelocity = newLocalVelocity.mul(speedLimit / newLocalVelocity.mag());
+		}
+		p.setVelocity(newLocalVelocity.rotate(left.angle()));
+
+		Vec2 newPos = p.getPosition().add(p.getVelocity().mul(t));
 		float nx = newPos.x();
 		float ny = newPos.y();
 
@@ -130,15 +183,15 @@ public class WorldUpdater extends Thread {
 
 	private void updatePlayerShooting(Player p) {
 		if (p.canUseWeapon()) {
-			for (int i = 0; i < p.getGun().getBulletsPerRound(); i++) {
+			for (int i = 0; i < p.getGun().getType().getBulletsPerRound(); i++) {
 				Bullet b = new Bullet(p);
 				this.world.getBullets().add(b);
 				this.worldUpdate.addBullet(b);
 			}
 			SoundType soundType = SoundType.SHOT_SMG;
-			if (p.getGun().getType() == GunType.RIFLE) {
+			if (p.getGun().getType().getCategory() == GunCategory.RIFLE) {
 				soundType = SoundType.SHOT_RIFLE;
-			} else if (p.getGun().getType() == GunType.SHOTGUN) {
+			} else if (p.getGun().getType().getCategory() == GunCategory.SHOTGUN) {
 				soundType = SoundType.SHOT_SHOTGUN;
 			}
 			this.worldUpdate.addSound(new Sound(p.getPosition(), 1.0f, soundType));
@@ -184,13 +237,20 @@ public class WorldUpdater extends Thread {
 			float y2 = b.getPosition().y();
 			float lineDist = oldPos.dist(b.getPosition());
 			for (Player p : this.world.getPlayers().values()) {
+				if (
+					!server.getSettings().getTeamSettings().friendlyFireEnabled() &&
+					b.getPlayer() != null && p.getTeam() != null &&
+					p.getTeam().equals(b.getPlayer().getTeam())
+				) {
+					continue; // Don't check collisions against teammates if friendly fire is off.
+				}
 				float n = ((p.getPosition().x() - x1) * (x2 - x1) + (p.getPosition().y() - y1) * (y2 - y1)) / lineDist;
 				n = Math.max(Math.min(n, 1), 0);
 				double dist = p.getPosition().dist(new Vec2(x1 + n * (x2 - x1), y1 + n * (y2 - y1)));
 				if (dist < Player.RADIUS && (p.getTeam() == null || p.getTeam().getSpawnPoint().dist(p.getPosition()) > Team.SPAWN_RADIUS)) {
 
 					// Player was shot!
-					float damage = (float) (((Player.RADIUS - dist) / Player.RADIUS) * b.getGun().getBaseDamage());
+					float damage = (float) (((Player.RADIUS - dist) / Player.RADIUS) * b.getGun().getType().getBaseDamage());
 					p.takeDamage(damage);
 					if (p.getHealth() == 0.0f) {
 						Player shooter = this.world.getPlayers().get(b.getPlayerId());

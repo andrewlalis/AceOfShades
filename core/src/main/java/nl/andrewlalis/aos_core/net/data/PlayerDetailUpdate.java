@@ -20,9 +20,9 @@ public class PlayerDetailUpdate {
 		this.health = player.getHealth();
 		this.reloading = player.isReloading();
 
-		this.gunMaxClipCount = player.getGun().getMaxClipCount();
-		this.gunClipSize = player.getGun().getClipSize();
-		this.gunBulletsPerRound = player.getGun().getBulletsPerRound();
+		this.gunMaxClipCount = player.getGun().getType().getMaxClipCount();
+		this.gunClipSize = player.getGun().getType().getClipSize();
+		this.gunBulletsPerRound = player.getGun().getType().getBulletsPerRound();
 		this.gunCurrentClipBulletCount = player.getGun().getCurrentClipBulletCount();
 		this.gunClipCount = player.getGun().getClipCount();
 	}

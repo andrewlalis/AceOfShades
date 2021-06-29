@@ -1,7 +1,13 @@
 package nl.andrewlalis.aos_server;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.PropertyNamingStrategies;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import nl.andrewlalis.aos_core.geom.Vec2;
 import nl.andrewlalis.aos_core.model.*;
+import nl.andrewlalis.aos_core.model.tools.GunCategory;
+import nl.andrewlalis.aos_core.model.tools.GunType;
 import nl.andrewlalis.aos_core.net.Message;
 import nl.andrewlalis.aos_core.net.PlayerUpdateMessage;
 import nl.andrewlalis.aos_core.net.Type;
@@ -10,6 +16,7 @@ import nl.andrewlalis.aos_core.net.data.DataTypes;
 import nl.andrewlalis.aos_core.net.data.PlayerDetailUpdate;
 import nl.andrewlalis.aos_core.net.data.WorldUpdate;
 import nl.andrewlalis.aos_core.util.ByteUtils;
+import nl.andrewlalis.aos_server.settings.ServerSettings;
 
 import java.awt.*;
 import java.io.IOException;
@@ -17,12 +24,11 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
 import java.util.List;
-import java.util.Scanner;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class Server {
-	public static final int DEFAULT_PORT = 8035;
+	private final ServerSettings settings;
 
 	private final List<ClientHandler> clientHandlers;
 	private final ServerSocket serverSocket;
@@ -34,10 +40,11 @@ public class Server {
 
 	private volatile boolean running;
 
-	public Server(int port) throws IOException {
+	public Server(ServerSettings settings) throws IOException {
+		this.settings = settings;
 		this.clientHandlers = new CopyOnWriteArrayList<>();
-		this.serverSocket = new ServerSocket(port);
-		this.dataTransceiver = new DataTransceiver(this, port);
+		this.serverSocket = new ServerSocket(settings.getPort());
+		this.dataTransceiver = new DataTransceiver(this, settings.getPort());
 		this.cli = new ServerCli(this);
 		this.world = new World(new Vec2(50, 70));
 		this.initWorld();
@@ -45,7 +52,27 @@ public class Server {
 		this.chatManager = new ChatManager(this);
 	}
 
+	public ServerSettings getSettings() {
+		return settings;
+	}
+
 	private void initWorld() {
+		for (var gs : this.settings.getGunSettings()) {
+			this.world.getGunTypes().put(gs.getName(), new GunType(
+				gs.getName(),
+				GunCategory.valueOf(gs.getCategory().toUpperCase()),
+				gs.getColor(),
+				gs.getMaxClipCount(),
+				gs.getClipSize(),
+				gs.getBulletsPerRound(),
+				gs.getAccuracy(),
+				gs.getShotCooldownTime(),
+				gs.getReloadTime(),
+				gs.getBulletSpeed(),
+				gs.getBaseDamage()
+			));
+		}
+
 		world.getBarricades().add(new Barricade(10, 10, 30, 5));
 		world.getBarricades().add(new Barricade(10, 55, 30, 5));
 		world.getBarricades().add(new Barricade(20, 30, 10, 10));
@@ -76,6 +103,10 @@ public class Server {
 		return chatManager;
 	}
 
+	public int getPlayerCount() {
+		return this.clientHandlers.size();
+	}
+
 	public void acceptClientConnection() {
 		try {
 			Socket socket = this.serverSocket.accept();
@@ -100,7 +131,7 @@ public class Server {
 				team = t;
 			}
 		}
-		Player p = new Player(id, name, team);
+		Player p = new Player(id, name, team, this.world.getGunTypes().get(this.settings.getPlayerSettings().getDefaultGun()));
 		this.world.getPlayers().put(p.getId(), p);
 		String message = p.getName() + " connected.";
 		this.broadcastMessage(new SystemChatMessage(SystemChatMessage.Level.INFO, message));
@@ -215,20 +246,11 @@ public class Server {
 
 
 	public static void main(String[] args) throws IOException {
-		System.out.println("Enter the port number to start the server on, or blank for default (" + DEFAULT_PORT + "):");
-		Scanner sc = new Scanner(System.in);
-		String input = sc.nextLine();
-		int port = DEFAULT_PORT;
-		if (input != null && !input.isBlank()) {
-			try {
-				port = Integer.parseInt(input.trim());
-			} catch (NumberFormatException e) {
-				System.err.println("Invalid port.");
-				return;
-			}
-		}
-
-		Server server = new Server(port);
+		ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
+		mapper.setPropertyNamingStrategy(PropertyNamingStrategies.KEBAB_CASE);
+		mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+		var settings = mapper.readValue(Server.class.getClassLoader().getResourceAsStream("default_settings.yaml"), ServerSettings.class);
+		Server server = new Server(settings);
 		server.run();
 	}
 }

@@ -2,14 +2,23 @@ package nl.andrewlalis.aos_core.model;
 
 import nl.andrewlalis.aos_core.geom.Vec2;
 import nl.andrewlalis.aos_core.model.tools.Gun;
+import nl.andrewlalis.aos_core.model.tools.GunType;
 
 import java.util.Objects;
 
 public class Player extends PhysicsObject implements Comparable<Player> {
 	public static final float MOVEMENT_SPEED = 10; // Movement speed, in m/s
+	public static final float MOVEMENT_SPEED_SPRINT = 18;
+	public static final float MOVEMENT_SPEED_SNEAK = 5;
+	public static final float MOVEMENT_ACCELERATION = 60; // Acceleration speed, in m/s^2.
+	public static final float MOVEMENT_THRESHOLD = 0.001f; // Threshold for stopping movement. Speeds slower than this are reduced to 0.
+	public static final float MOVEMENT_DECELERATION = 30; // Deceleration speed, in m/s^2.
 	public static final float RADIUS = 0.5f; // Collision radius, in meters.
 	public static final float RESUPPLY_COOLDOWN = 30; // Seconds between allowing resupply.
 	public static final float MAX_HEALTH = 100.0f;
+	public static final float HEALTH_REGEN_RATE = 1.0f; // How quickly players regenerate health over time.
+	public static final float SNEAK_ACCURACY_MODIFIER = 0.5f;
+	public static final float SPRINT_ACCURACY_MODIFIER = 1.5f;
 
 	private final int id;
 	private final String name;
@@ -23,12 +32,12 @@ public class Player extends PhysicsObject implements Comparable<Player> {
 	private boolean reloading;
 	private transient long lastResupply;
 
-	public Player(int id, String name, Team team) {
+	public Player(int id, String name, Team team, GunType gunType) {
 		this.id = id;
 		this.name = name;
 		this.team = team;
 		this.state = new PlayerControlState();
-		this.gun = Gun.ak47();
+		this.gun = new Gun(gunType);
 		this.health = MAX_HEALTH;
 		this.useWeapon();
 		this.lastShot = System.currentTimeMillis();
@@ -79,7 +88,7 @@ public class Player extends PhysicsObject implements Comparable<Player> {
 			!this.state.isReloading() &&
 			!this.reloading &&
 			this.gun.getCurrentClipBulletCount() > 0 &&
-			this.lastShot + ((long) (this.gun.getShotCooldownTime() * 1000)) < System.currentTimeMillis() &&
+			this.lastShot + ((long) (this.gun.getType().getShotCooldownTime() * 1000)) < System.currentTimeMillis() &&
 			(this.getTeam() == null || this.getTeam().getSpawnPoint().dist(this.getPosition()) > Team.SPAWN_RADIUS);
 	}
 
@@ -100,10 +109,7 @@ public class Player extends PhysicsObject implements Comparable<Player> {
 
 	public boolean isReloadingComplete() {
 		long msSinceStart = System.currentTimeMillis() - this.reloadingStartedAt;
-		if (msSinceStart > this.gun.getReloadTime() * 1000) {
-			return true;
-		}
-		return false;
+		return msSinceStart > this.gun.getType().getReloadTime() * 1000;
 	}
 
 	public boolean isReloading() {
@@ -136,6 +142,16 @@ public class Player extends PhysicsObject implements Comparable<Player> {
 		if (this.team != null) {
 			this.setPosition(this.team.getSpawnPoint().add(Vec2.random(-Team.SPAWN_RADIUS / 2, Team.SPAWN_RADIUS / 2)));
 		}
+	}
+
+	public boolean isSneaking() {
+		return this.state.isSneaking() &&
+			!this.state.isSprinting();
+	}
+
+	public boolean isSprinting() {
+		return this.state.isSprinting() &&
+			!this.state.isSneaking();
 	}
 
 	@Override

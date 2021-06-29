@@ -3,6 +3,7 @@ package nl.andrewlalis.aos_server;
 import nl.andrewlalis.aos_core.model.Player;
 import nl.andrewlalis.aos_core.net.chat.ChatMessage;
 import nl.andrewlalis.aos_core.net.chat.PlayerChatMessage;
+import nl.andrewlalis.aos_server.command.GunsCommand;
 import nl.andrewlalis.aos_server.command.ResetCommand;
 import nl.andrewlalis.aos_server.command.chat.ChatCommand;
 import nl.andrewlalis.aos_server.command.chat.GunCommand;
@@ -25,6 +26,7 @@ public class ChatManager {
 		this.chatCommands = new ConcurrentHashMap<>();
 		this.chatCommands.put("gun", new GunCommand());
 		this.chatCommands.put("reset", new ResetCommand(server));
+		this.chatCommands.put("guns", new GunsCommand(server));
 	}
 
 	public void handlePlayerChat(ClientHandler handler, Player player, ChatMessage msg) {

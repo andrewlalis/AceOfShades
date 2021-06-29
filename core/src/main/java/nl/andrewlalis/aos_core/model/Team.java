@@ -10,6 +10,7 @@ import java.util.List;
 public class Team implements Serializable {
 	public static final float SPAWN_RADIUS = 3;
 	public static final float SUPPLY_POINT_RADIUS = 2;
+	public static final boolean FRIENDLY_FIRE = false;
 
 	private final String name;
 	private final java.awt.Color color;

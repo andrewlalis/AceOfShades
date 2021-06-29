@@ -50,6 +50,10 @@ public class PlayerKeyListener extends KeyAdapter {
 			state.setMovingRight(true);
 		} else if (e.getKeyCode() == KeyEvent.VK_R) {
 			state.setReloading(true);
+		} else if (e.getKeyCode() == KeyEvent.VK_SHIFT) {
+			state.setSprinting(true);
+		} else if (e.getKeyCode() == KeyEvent.VK_CONTROL) {
+			state.setSneaking(true);
 		}
 		this.client.sendPlayerState();
 	}
@@ -68,6 +72,10 @@ public class PlayerKeyListener extends KeyAdapter {
 			state.setMovingRight(false);
 		} else if (e.getKeyCode() == KeyEvent.VK_R) {
 			state.setReloading(false);
+		} else if (e.getKeyCode() == KeyEvent.VK_SHIFT) {
+			state.setSprinting(false);
+		} else if (e.getKeyCode() == KeyEvent.VK_CONTROL) {
+			state.setSneaking(false);
 		}
 		this.client.sendPlayerState();
 	}

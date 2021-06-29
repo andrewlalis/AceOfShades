@@ -2,12 +2,15 @@ package nl.andrewlalis.aos_core.net.data;
 
 import nl.andrewlalis.aos_core.geom.Vec2;
 import nl.andrewlalis.aos_core.model.Player;
-import nl.andrewlalis.aos_core.model.tools.GunType;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 
+/**
+ * The data that's sent to all clients about a player, and contains only the
+ * information needed to render the player on the screen.
+ */
 public class PlayerUpdate {
 	public static final int BYTES = Integer.BYTES + 6 * Float.BYTES + 1;
 
@@ -15,22 +18,22 @@ public class PlayerUpdate {
 	private final Vec2 position;
 	private final Vec2 orientation;
 	private final Vec2 velocity;
-	private final GunType gunType;
+	private final String gunTypeName;
 
 	public PlayerUpdate(Player player) {
 		this.id = player.getId();
 		this.position = player.getPosition();
 		this.orientation = player.getOrientation();
 		this.velocity = player.getVelocity();
-		this.gunType = player.getGun().getType();
+		this.gunTypeName = player.getGun().getType().getName();
 	}
 
-	public PlayerUpdate(int id, Vec2 position, Vec2 orientation, Vec2 velocity, GunType gunType) {
+	public PlayerUpdate(int id, Vec2 position, Vec2 orientation, Vec2 velocity, String gunTypeName) {
 		this.id = id;
 		this.position = position;
 		this.orientation = orientation;
 		this.velocity = velocity;
-		this.gunType = gunType;
+		this.gunTypeName = gunTypeName;
 	}
 
 	public int getId() {
@@ -49,8 +52,8 @@ public class PlayerUpdate {
 		return velocity;
 	}
 
-	public GunType getGunType() {
-		return gunType;
+	public String getGunTypeName() {
+		return gunTypeName;
 	}
 
 	public void write(DataOutputStream out) throws IOException {
@@ -61,16 +64,17 @@ public class PlayerUpdate {
 		out.writeFloat(this.orientation.y());
 		out.writeFloat(this.velocity.x());
 		out.writeFloat(this.velocity.y());
-		out.writeByte(this.gunType.getCode());
+		out.writeInt(this.gunTypeName.length());
+		out.writeBytes(this.gunTypeName);
 	}
 
 	public static PlayerUpdate read(DataInputStream in) throws IOException {
-		return new PlayerUpdate(
-			in.readInt(),
-			Vec2.read(in),
-			Vec2.read(in),
-			Vec2.read(in),
-			GunType.get(in.readByte())
-		);
+		int id = in.readInt();
+		Vec2 position = Vec2.read(in);
+		Vec2 orientation = Vec2.read(in);
+		Vec2 velocity = Vec2.read(in);
+		int gunTypeNameLength = in.readInt();
+		String gunTypeName = new String(in.readNBytes(gunTypeNameLength));
+		return new PlayerUpdate(id, position, orientation, velocity, gunTypeName);
 	}
 }

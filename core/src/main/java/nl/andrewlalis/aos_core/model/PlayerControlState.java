@@ -11,6 +11,8 @@ public class PlayerControlState implements Serializable {
 	boolean movingRight;
 	boolean movingForward;
 	boolean movingBackward;
+	boolean sprinting;
+	boolean sneaking;
 
 	boolean shooting;
 	boolean reloading;
@@ -49,6 +51,22 @@ public class PlayerControlState implements Serializable {
 		this.movingBackward = movingBackward;
 	}
 
+	public boolean isSprinting() {
+		return sprinting;
+	}
+
+	public void setSprinting(boolean sprinting) {
+		this.sprinting = sprinting;
+	}
+
+	public boolean isSneaking() {
+		return sneaking;
+	}
+
+	public void setSneaking(boolean sneaking) {
+		this.sneaking = sneaking;
+	}
+
 	public boolean isShooting() {
 		return shooting;
 	}
@@ -73,19 +91,6 @@ public class PlayerControlState implements Serializable {
 		this.mouseLocation = mouseLocation;
 	}
 
-	@Override
-	public String toString() {
-		return "PlayerControlState{" +
-			"movingLeft=" + movingLeft +
-			", movingRight=" + movingRight +
-			", movingForward=" + movingForward +
-			", movingBackward=" + movingBackward +
-			", shooting=" + shooting +
-			", reloading=" + reloading +
-			", mouseLocation=" + mouseLocation +
-			'}';
-	}
-
 	public byte[] toBytes() {
 		ByteBuffer buffer = ByteBuffer.allocate(Integer.BYTES + 2 * Float.BYTES);
 		int flags = 0;
@@ -95,6 +100,8 @@ public class PlayerControlState implements Serializable {
 		if (this.movingBackward) flags |= 8;
 		if (this.shooting) flags |= 16;
 		if (this.reloading) flags |= 32;
+		if (this.sprinting) flags |= 64;
+		if (this.sneaking) flags |= 128;
 		buffer.putInt(flags);
 		buffer.putFloat(this.mouseLocation.x());
 		buffer.putFloat(this.mouseLocation.y());
@@ -111,6 +118,8 @@ public class PlayerControlState implements Serializable {
 		s.movingBackward = (flags & 8) > 0;
 		s.shooting = (flags & 16) > 0;
 		s.reloading = (flags & 32) > 0;
+		s.sprinting = (flags & 64) > 0;
+		s.sneaking = (flags & 128) > 0;
 		s.mouseLocation = new Vec2(buffer.getFloat(), buffer.getFloat());
 		return s;
 	}
