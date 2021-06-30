@@ -3,4 +3,4 @@ client/target/
 core/target/
 server/target/
 server-registry/target/
-/*.iml
+*.iml
