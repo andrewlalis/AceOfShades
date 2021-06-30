@@ -12,6 +12,7 @@
 		<module>server</module>
 		<module>client</module>
 		<module>core</module>
+		<module>server-registry</module>
 	</modules>
 
 	<properties>
