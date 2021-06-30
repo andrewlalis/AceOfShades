@@ -9,6 +9,9 @@ import java.util.concurrent.ThreadLocalRandom;
 public record Vec2(float x, float y) implements Serializable {
 	public static final Vec2 ZERO = new Vec2(0, 0);
 	public static final Vec2 UP = new Vec2(0, -1);
+	public static final Vec2 DOWN = new Vec2(0, 1);
+	public static final Vec2 RIGHT = new Vec2(1, 0);
+	public static final Vec2 LEFT = new Vec2(-1, 0);
 
 
 	public float mag() {

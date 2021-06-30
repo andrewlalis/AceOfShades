@@ -80,7 +80,7 @@ public class Client {
 				team.setScore(t.getScore());
 			}
 		}
-		this.soundManager.play(update.getSoundsToPlay());
+		this.soundManager.play(update.getSoundsToPlay(), myPlayer);
 	}
 
 	public void setWorld(World world) {

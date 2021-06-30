@@ -1,32 +1,56 @@
 package nl.andrewlalis.aos_client;
 
+import nl.andrewlalis.aos_core.geom.Vec2;
+import nl.andrewlalis.aos_core.model.Player;
 import nl.andrewlalis.aos_core.net.data.Sound;
+import nl.andrewlalis.aos_core.net.data.SoundType;
 
 import javax.sound.sampled.*;
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 public class SoundManager {
-	private static final int CLIP_COUNT = 10;
+	private static final float HEARING_RANGE = 50.0f;
 	private final Map<String, List<Clip>> soundData = new HashMap<>();
 	private final Map<String, Integer> clipIndexes = new HashMap<>();
 
+	public void play(List<Sound> sounds, Player player) {
+		for (Sound sound : sounds) {
+			this.play(sound, player);
+		}
+	}
 	public void play(List<Sound> sounds) {
 		for (Sound sound : sounds) {
-			this.play(sound);
+			this.play(sound, null);
 		}
 	}
 
 	public void play(Sound sound) {
-		var clip = this.getClip(sound.getType().getSoundName());
+		this.play(sound, null);
+	}
+
+	public void play(Sound sound, Player player) {
+		var clip = this.getClip(sound.getType());
 		if (clip == null) {
 			return;
 		}
 		clip.setFramePosition(0);
-		setVolume(clip, sound.getVolume());
+		float v = sound.getVolume();
+		if (player != null && sound.getPosition() != null) {
+			float dist = player.getPosition().dist(sound.getPosition());
+			v *= (Math.max(HEARING_RANGE - dist, 0) / HEARING_RANGE);
+		}
+		if (v <= 0.0f) return;
+		if (player != null && player.getTeam() != null && sound.getPosition() != null) {
+			setPan(clip, player.getPosition(), sound.getPosition(), player.getTeam().getOrientation());
+		}
+		setVolume(clip, v);
 		clip.start();
 	}
 
@@ -36,7 +60,19 @@ public class SoundManager {
 		gainControl.setValue(20f * (float) Math.log10(volume));
 	}
 
-	private Clip getClip(String sound) {
+	private void setPan(Clip clip, Vec2 playerPos, Vec2 soundPos, Vec2 playerOrientation) {
+		Vec2 soundDir = soundPos
+				.sub(playerPos)
+				.rotate(playerOrientation.perp().angle())
+				.unit();
+		float pan = Math.max(Math.min(soundDir.dot(Vec2.RIGHT), 1.0f), -1.0f);
+		if (Float.isNaN(pan)) pan = 0f;
+		FloatControl panControl = (FloatControl) clip.getControl(FloatControl.Type.PAN);
+		panControl.setValue(pan);
+	}
+
+	private Clip getClip(SoundType soundType) {
+		String sound = soundType.getSoundName();
 		var clips = this.soundData.get(sound);
 		if (clips == null) {
 			InputStream is = Client.class.getResourceAsStream("/nl/andrewlalis/aos_client/sound/" + sound);
@@ -48,8 +84,8 @@ public class SoundManager {
 				ByteArrayOutputStream bos = new ByteArrayOutputStream();
 				is.transferTo(bos);
 				byte[] data = bos.toByteArray();
-				clips = new ArrayList<>(CLIP_COUNT);
-				for (int i = 0; i < CLIP_COUNT; i++) {
+				clips = new ArrayList<>(soundType.getClipBufferCount());
+				for (int i = 0; i < soundType.getClipBufferCount(); i++) {
 					var ais = AudioSystem.getAudioInputStream(new ByteArrayInputStream(data));
 					var clip = AudioSystem.getClip();
 					clip.open(ais);
@@ -64,7 +100,7 @@ public class SoundManager {
 			}
 		}
 		int index = this.clipIndexes.get(sound);
-		if (index >= CLIP_COUNT) {
+		if (index >= soundType.getClipBufferCount()) {
 			index = 0;
 		}
 		Clip clip = clips.get(index);

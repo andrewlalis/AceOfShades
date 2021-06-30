@@ -60,6 +60,18 @@ gun-settings:
     bullet-speed: 90
     base-damage: 40
 
+  - name: M-249
+    category: SMG
+    color: "#001942"
+    max-clip-count: 3
+    clip-size: 100
+    bullets-per-round: 1
+    accuracy: 0.08
+    shot-cooldown-time: 0.03
+    reload-time: 3.5
+    bullet-speed: 80
+    base-damage: 35
+
   - name: M1 Garand
     category: RIFLE
     color: "#452d06"
