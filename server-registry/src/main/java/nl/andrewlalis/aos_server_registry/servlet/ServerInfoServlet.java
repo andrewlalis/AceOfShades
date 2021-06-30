@@ -18,8 +18,11 @@ import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Logger;
 
 public class ServerInfoServlet extends HttpServlet {
+	private static final Logger log = Logger.getLogger(ServerInfoServlet.class.getName());
+
 	@Override
 	protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
 		int page = Requests.getIntParam(req, "page", 0, i -> i >= 0);
@@ -120,7 +123,7 @@ public class ServerInfoServlet extends HttpServlet {
 			int rowCount = createStmt.executeUpdate();
 			createStmt.close();
 			if (rowCount != 1) throw new SQLException("Could not insert new server.");
-			System.out.println("Registered new server " + info.name() + " @ " + info.address());
+			log.info("Registered new server " + info.name() + " @ " + info.address());
 		} else {
 			PreparedStatement updateStmt = con.prepareStatement("""
 				UPDATE servers SET description = ?, location = ?, max_players = ?, current_players = ?
@@ -135,7 +138,7 @@ public class ServerInfoServlet extends HttpServlet {
 			int rowCount = updateStmt.executeUpdate();
 			updateStmt.close();
 			if (rowCount != 1) throw new SQLException("Could not update server.");
-			System.out.println("Updated server information for " + info.name() + " @ " + info.address());
+			log.info("Updated server information for " + info.name() + " @ " + info.address());
 		}
 	}
 
@@ -155,6 +158,7 @@ public class ServerInfoServlet extends HttpServlet {
 				Responses.notFound(resp);
 			} else {
 				Responses.ok(resp);
+				log.info("Status updated for " + status.name() + " @ " + status.address());
 			}
 		} catch (SQLException e) {
 			e.printStackTrace();

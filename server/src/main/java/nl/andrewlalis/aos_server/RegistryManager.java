@@ -73,8 +73,8 @@ public class RegistryManager {
 				.header("Content-Type", "application/json")
 				.build();
 			this.httpClient.sendAsync(request, responseInfo -> {
-				if (responseInfo.statusCode() == 404) {
-					System.out.println("Received 404 when sending registry update. Re-sending registry info...");
+				if (responseInfo.statusCode() != 200) {
+					System.out.println("Received non-OK status when sending registry update. Re-sending registry info...");
 					this.sendInfo();
 				}
 				return null;

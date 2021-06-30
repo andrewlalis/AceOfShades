@@ -14,3 +14,4 @@ help            Shows this help message.
 list            Show a list of all connected players.
 kick <p>        Kick a player with the given id or name. If more than one player
                 exists with a given name, you need to use their unique id.
+guns            Lists all available guns that players may use in this server.
