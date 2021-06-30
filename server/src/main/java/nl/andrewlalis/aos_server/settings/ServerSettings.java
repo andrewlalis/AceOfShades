@@ -6,6 +6,8 @@ public class ServerSettings {
 	private int port;
 	private int maxPlayers;
 	private float ticksPerSecond;
+
+	private RegistrySettings registrySettings;
 	private PlayerSettings playerSettings;
 	private TeamSettings teamSettings;
 	private List<GunSettings> gunSettings;

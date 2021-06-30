@@ -127,6 +127,7 @@ public class ServerInfoServlet extends HttpServlet {
 			int rowCount = createStmt.executeUpdate();
 			createStmt.close();
 			if (rowCount != 1) throw new SQLException("Could not insert new server.");
+			System.out.println("Registered new server " + info.name() + " @ " + info.address());
 		} else {
 			PreparedStatement updateStmt = con.prepareStatement("""
 				UPDATE servers SET description = ?, location = ?, max_players = ?, current_players = ?
@@ -141,6 +142,7 @@ public class ServerInfoServlet extends HttpServlet {
 			int rowCount = updateStmt.executeUpdate();
 			updateStmt.close();
 			if (rowCount != 1) throw new SQLException("Could not update server.");
+			System.out.println("Updated server information for " + info.name() + " @ " + info.address());
 		}
 	}
 
@@ -156,5 +158,6 @@ public class ServerInfoServlet extends HttpServlet {
 		int rowCount = stmt.executeUpdate();
 		stmt.close();
 		if (rowCount != 1) throw new SQLException("Could not update server status.");
+		System.out.println("Updated server status for " + status.name() + " @ " + status.address());
 	}
 }
