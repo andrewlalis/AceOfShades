@@ -38,7 +38,7 @@ public class ServerInfoServlet extends HttpServlet {
 		String orderDir = Requests.getStringParam(req, "dir", "ASC", s -> s.equalsIgnoreCase("ASC") || s.equalsIgnoreCase("DESC"));
 		try {
 			var results = this.getData(size, page, searchQuery, order, orderDir);
-			Responses.ok(resp, new Page<>(results, page, size));
+			Responses.ok(resp, new Page<>(results, page, size, order, orderDir));
 		} catch (SQLException t) {
 			t.printStackTrace();
 			Responses.internalServerError(resp, "Database error.");
@@ -146,7 +146,7 @@ public class ServerInfoServlet extends HttpServlet {
 		try {
 			var con = DataManager.getInstance().getConnection();
 			PreparedStatement stmt = con.prepareStatement("""
-			UPDATE servers SET current_players = ?
+			UPDATE servers SET current_players = ?, updated_at = CURRENT_TIMESTAMP(0)
 			WHERE name = ? AND address = ?
 			""");
 			stmt.setInt(1, status.currentPlayers());

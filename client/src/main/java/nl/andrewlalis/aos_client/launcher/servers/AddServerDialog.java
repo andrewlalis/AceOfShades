@@ -105,7 +105,7 @@ public class AddServerDialog extends JDialog {
 		if (username != null && !username.isBlank() && username.length() > 16) {
 			messages.add("Username is too long. Maximum of 16 characters.");
 		}
-		if (username != null && !Launcher.usernamePattern.matcher(username).matches()) {
+		if (username != null && !username.isBlank() && !Launcher.usernamePattern.matcher(username).matches()) {
 			messages.add("Username should contain only letters, numbers, underscores, and hyphens.");
 		}
 		return messages;

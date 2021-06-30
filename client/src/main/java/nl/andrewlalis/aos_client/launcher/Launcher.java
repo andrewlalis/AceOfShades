@@ -117,6 +117,14 @@ public class Launcher extends JFrame {
 		});
 		buttonPanel.add(directConnectButton);
 
+		JButton searchButton = new JButton("Search");
+		searchButton.setToolTipText("Search for servers online.");
+		searchButton.addActionListener(e -> {
+			SearchServersDialog dialog = new SearchServersDialog(this, listModel);
+			dialog.setVisible(true);
+		});
+		buttonPanel.add(searchButton);
+
 		JButton helpButton = new JButton("Help");
 		helpButton.setToolTipText("Show some helpful information for using this program.");
 		helpButton.addActionListener(e -> {
