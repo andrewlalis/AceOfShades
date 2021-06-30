@@ -2,6 +2,7 @@ module aos_server {
 	requires java.logging;
 	requires aos_core;
 	requires java.desktop;
+	requires java.net.http;
 	requires com.fasterxml.jackson.databind;
 	requires com.fasterxml.jackson.dataformat.yaml;
 

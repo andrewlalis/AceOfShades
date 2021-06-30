@@ -3,6 +3,7 @@ package nl.andrewlalis.aos_server.settings;
 public class RegistrySettings {
 	private boolean discoverable;
 	private String registryUri;
+	private long updateInterval;
 	private String name;
 	private String address;
 	private String description;
@@ -14,6 +15,10 @@ public class RegistrySettings {
 
 	public String getRegistryUri() {
 		return registryUri;
+	}
+
+	public long getUpdateInterval() {
+		return updateInterval;
 	}
 
 	public String getName() {

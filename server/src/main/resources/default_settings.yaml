@@ -3,9 +3,10 @@ max-players: 32
 ticks-per-second: 120
 
 # Information for the public server registry.
-registry-data:
+registry-settings:
   discoverable: true
   registry-uri: "http://localhost:8567"
+  update-interval: 10
   name: "Testing Server"
   address: "localhost:8035"
   description: "A simple testing server for development."

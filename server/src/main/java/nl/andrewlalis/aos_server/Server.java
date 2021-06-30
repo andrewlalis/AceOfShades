@@ -25,7 +25,9 @@ import java.net.Socket;
 import java.net.SocketException;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 
 public class Server {
 	private final ServerSettings settings;
@@ -37,6 +39,7 @@ public class Server {
 	private final WorldUpdater worldUpdater;
 	private final ServerCli cli;
 	private final ChatManager chatManager;
+	private RegistryManager registryManager;
 
 	private volatile boolean running;
 
@@ -50,6 +53,9 @@ public class Server {
 		this.initWorld();
 		this.worldUpdater = new WorldUpdater(this, this.world);
 		this.chatManager = new ChatManager(this);
+		if (settings.getRegistrySettings().isDiscoverable()) {
+			this.registryManager = new RegistryManager(this);
+		}
 	}
 
 	public ServerSettings getSettings() {
@@ -230,7 +236,7 @@ public class Server {
 				handler.send(new Message(Type.SERVER_SHUTDOWN));
 				handler.shutdown();
 			}
-		} catch (IOException e) {
+		} catch (Exception e) {
 			System.err.println("Could not close server socket on shutdown: " + e.getMessage());
 		}
 	}
@@ -252,6 +258,10 @@ public class Server {
 		System.out.println("Stopped CLI interface.");
 		this.dataTransceiver.shutdown();
 		System.out.println("Stopped data transceiver.");
+		if (this.registryManager != null) {
+			this.registryManager.shutdown();
+			System.out.println("Stopped registry communications.");
+		}
 	}
 
 

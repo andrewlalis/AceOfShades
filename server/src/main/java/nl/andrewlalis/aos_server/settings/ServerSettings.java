@@ -24,6 +24,10 @@ public class ServerSettings {
 		return ticksPerSecond;
 	}
 
+	public RegistrySettings getRegistrySettings() {
+		return registrySettings;
+	}
+
 	public PlayerSettings getPlayerSettings() {
 		return playerSettings;
 	}

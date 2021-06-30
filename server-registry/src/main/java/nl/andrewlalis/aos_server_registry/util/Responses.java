@@ -11,6 +11,10 @@ import static nl.andrewlalis.aos_server_registry.ServerRegistry.mapper;
  * JSON responses.
  */
 public class Responses {
+	public static void ok(HttpServletResponse resp) {
+		resp.setStatus(HttpServletResponse.SC_OK);
+	}
+
 	public static void ok(HttpServletResponse resp, Object body) throws IOException {
 		resp.setStatus(HttpServletResponse.SC_OK);
 		resp.setContentType("application/json");

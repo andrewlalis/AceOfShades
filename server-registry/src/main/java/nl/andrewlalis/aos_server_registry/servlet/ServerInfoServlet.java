@@ -7,7 +7,6 @@ import nl.andrewlalis.aos_server_registry.servlet.dto.ServerStatusUpdate;
 import nl.andrewlalis.aos_server_registry.util.Requests;
 import nl.andrewlalis.aos_server_registry.util.Responses;
 
-import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -22,7 +21,7 @@ import java.util.Map;
 
 public class ServerInfoServlet extends HttpServlet {
 	@Override
-	protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+	protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
 		int page = Requests.getIntParam(req, "page", 0, i -> i >= 0);
 		int size = Requests.getIntParam(req, "size", 20, i -> i >= 5 && i <= 50);
 		String searchQuery = Requests.getStringParam(req, "q", null, s -> !s.isBlank());
@@ -44,7 +43,7 @@ public class ServerInfoServlet extends HttpServlet {
 	}
 
 	@Override
-	protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+	protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
 		var info = Requests.getBody(req, ServerInfoUpdate.class);
 		try {
 			this.saveNewServer(info);
@@ -56,15 +55,9 @@ public class ServerInfoServlet extends HttpServlet {
 	}
 
 	@Override
-	protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+	protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws IOException {
 		var status = Requests.getBody(req, ServerStatusUpdate.class);
-		try {
-			this.updateServerStatus(status);
-			Responses.ok(resp, Map.of("message", "Server status updated."));
-		} catch (SQLException e) {
-			e.printStackTrace();
-			Responses.internalServerError(resp, "Database error.");
-		}
+		this.updateServerStatus(status, resp);
 	}
 
 	private List<ServerInfoResponse> getData(int size, int page, String searchQuery, String order, String orderDir) throws SQLException {
@@ -146,18 +139,26 @@ public class ServerInfoServlet extends HttpServlet {
 		}
 	}
 
-	private void updateServerStatus(ServerStatusUpdate status) throws SQLException {
-		var con = DataManager.getInstance().getConnection();
-		PreparedStatement stmt = con.prepareStatement("""
+	private void updateServerStatus(ServerStatusUpdate status, HttpServletResponse resp) throws IOException {
+		try {
+			var con = DataManager.getInstance().getConnection();
+			PreparedStatement stmt = con.prepareStatement("""
 			UPDATE servers SET current_players = ?
 			WHERE name = ? AND address = ?
 			""");
-		stmt.setInt(1, status.currentPlayers());
-		stmt.setString(2, status.name());
-		stmt.setString(3, status.address());
-		int rowCount = stmt.executeUpdate();
-		stmt.close();
-		if (rowCount != 1) throw new SQLException("Could not update server status.");
-		System.out.println("Updated server status for " + status.name() + " @ " + status.address());
+			stmt.setInt(1, status.currentPlayers());
+			stmt.setString(2, status.name());
+			stmt.setString(3, status.address());
+			int rowCount = stmt.executeUpdate();
+			stmt.close();
+			if (rowCount != 1) {
+				Responses.notFound(resp);
+			} else {
+				Responses.ok(resp);
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+			Responses.internalServerError(resp, "Database error.");
+		}
 	}
 }
