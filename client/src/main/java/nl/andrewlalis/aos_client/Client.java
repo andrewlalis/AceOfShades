@@ -1,5 +1,6 @@
 package nl.andrewlalis.aos_client;
 
+import nl.andrewlalis.aos_client.sound.SoundManager;
 import nl.andrewlalis.aos_client.view.GameFrame;
 import nl.andrewlalis.aos_client.view.GamePanel;
 import nl.andrewlalis.aos_core.model.Player;

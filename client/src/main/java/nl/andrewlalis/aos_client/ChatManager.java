@@ -1,5 +1,6 @@
 package nl.andrewlalis.aos_client;
 
+import nl.andrewlalis.aos_client.sound.SoundManager;
 import nl.andrewlalis.aos_core.net.chat.ChatMessage;
 import nl.andrewlalis.aos_core.net.chat.ChatType;
 import nl.andrewlalis.aos_core.net.chat.PlayerChatMessage;
