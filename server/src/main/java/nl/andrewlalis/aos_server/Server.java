@@ -17,6 +17,7 @@ import nl.andrewlalis.aos_core.net.data.PlayerDetailUpdate;
 import nl.andrewlalis.aos_core.net.data.WorldUpdate;
 import nl.andrewlalis.aos_core.util.ByteUtils;
 import nl.andrewlalis.aos_server.settings.ServerSettings;
+import nl.andrewlalis.aos_server.settings.SettingsLoader;
 
 import java.awt.*;
 import java.io.IOException;
@@ -54,6 +55,7 @@ public class Server {
 		this.worldUpdater = new WorldUpdater(this, this.world);
 		this.chatManager = new ChatManager(this);
 		if (settings.getRegistrySettings().isDiscoverable()) {
+			System.out.println("Starting registry communications.");
 			this.registryManager = new RegistryManager(this);
 		}
 	}
@@ -267,11 +269,7 @@ public class Server {
 
 
 	public static void main(String[] args) throws IOException {
-		ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
-		mapper.setPropertyNamingStrategy(PropertyNamingStrategies.KEBAB_CASE);
-		mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-		var settings = mapper.readValue(Server.class.getClassLoader().getResourceAsStream("default_settings.yaml"), ServerSettings.class);
-		Server server = new Server(settings);
+		Server server = new Server(SettingsLoader.load());
 		server.run();
 	}
 }
