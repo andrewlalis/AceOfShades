@@ -2,11 +2,19 @@ package nl.andrewlalis.aos_server;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Duration;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Executors;
@@ -48,6 +56,7 @@ public class RegistryManager {
 			data.put("address", this.server.getSettings().getRegistrySettings().getAddress());
 			data.put("description", this.server.getSettings().getRegistrySettings().getDescription());
 			data.put("location", this.server.getSettings().getRegistrySettings().getLocation());
+			data.put("icon", this.getIconData());
 			data.put("maxPlayers", this.server.getSettings().getMaxPlayers());
 			data.put("currentPlayers", 0);
 			HttpRequest request = HttpRequest.newBuilder()
@@ -82,6 +91,20 @@ public class RegistryManager {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+	}
+
+	private String getIconData() throws IOException {
+		Path iconFile = Path.of("icon.png");
+		if (Files.exists(iconFile)) {
+			byte[] imageBytes = Files.readAllBytes(iconFile);
+			BufferedImage image = ImageIO.read(new ByteArrayInputStream(imageBytes));
+			if (image.getWidth() == 64 && image.getHeight() == 64) {
+				return Base64.getUrlEncoder().encodeToString(imageBytes);
+			} else {
+				System.err.println("icon.png must be 64 x 64.");
+			}
+		}
+		return null;
 	}
 
 	public void shutdown() {

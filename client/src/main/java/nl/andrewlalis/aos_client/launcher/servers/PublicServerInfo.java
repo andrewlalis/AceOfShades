@@ -8,6 +8,7 @@ public record PublicServerInfo(
 	String address,
 	String description,
 	String location,
+	Image icon,
 	int maxPlayers,
 	int currentPlayers
 ) {
@@ -18,11 +19,18 @@ public record PublicServerInfo(
 
 			panel.add(new JLabel("Address: " + value.address()), BorderLayout.NORTH);
 
+			JPanel content = new JPanel();
+			if (value.icon() != null) {
+				JLabel iconLabel = new JLabel(new ImageIcon(value.icon()));
+				content.add(iconLabel);
+			}
+
 			JTextArea descriptionArea = new JTextArea(value.description());
 			descriptionArea.setEditable(false);
 			descriptionArea.setWrapStyleWord(true);
 			descriptionArea.setLineWrap(true);
-			panel.add(descriptionArea, BorderLayout.CENTER);
+			content.add(descriptionArea);
+			panel.add(content, BorderLayout.CENTER);
 
 			JPanel bottomPanel = new JPanel();
 			bottomPanel.add(new JLabel(String.format("Current players: %d / %d", value.currentPlayers(), value.maxPlayers())));

@@ -11,6 +11,10 @@ import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+/**
+ * Utility class that's responsible for loading the settings from their usual
+ * location,
+ */
 public class SettingsLoader {
 	public static ServerSettings load() throws IOException {
 		Path settingsFile = Path.of("settings.yaml");

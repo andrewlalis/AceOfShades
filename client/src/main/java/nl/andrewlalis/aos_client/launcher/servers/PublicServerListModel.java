@@ -2,8 +2,12 @@ package nl.andrewlalis.aos_client.launcher.servers;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.JsonNodeType;
 
+import javax.imageio.ImageIO;
 import javax.swing.*;
+import java.awt.*;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -14,6 +18,7 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.Executors;
@@ -101,11 +106,17 @@ public class PublicServerListModel extends AbstractListModel<PublicServerInfo> {
 				this.currentPageItems.clear();
 				for (Iterator<JsonNode> it = json.get("contents").elements(); it.hasNext();) {
 					JsonNode node = it.next();
+					Image icon = null;
+					JsonNode iconNode = node.get("icon");
+					if (iconNode != null && iconNode.getNodeType() == JsonNodeType.STRING) {
+						icon = ImageIO.read(new ByteArrayInputStream(Base64.getUrlDecoder().decode(iconNode.textValue())));
+					}
 					PublicServerInfo info = new PublicServerInfo(
 						node.get("name").asText(),
 						node.get("address").asText(),
 						node.get("description").asText(),
 						node.get("location").asText(),
+						icon,
 						node.get("maxPlayers").asInt(),
 						node.get("currentPlayers").asInt()
 					);
@@ -142,5 +153,9 @@ public class PublicServerListModel extends AbstractListModel<PublicServerInfo> {
 	@Override
 	public PublicServerInfo getElementAt(int index) {
 		return this.currentPageItems.get(index);
+	}
+
+	public void dispose() {
+		this.executorService.shutdown();
 	}
 }

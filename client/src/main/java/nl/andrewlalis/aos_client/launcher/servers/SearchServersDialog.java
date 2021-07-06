@@ -11,9 +11,19 @@ import java.awt.event.MouseEvent;
 import java.io.IOException;
 
 public class SearchServersDialog extends JDialog {
+	private final JButton prevButton;
+	private final JButton nextButton;
+	private final PublicServerListModel listModel;
+
 	public SearchServersDialog(Frame frame, ServerInfoListModel serverInfoListModel) {
 		super(frame, true);
 		this.setTitle("Search for Servers");
+		this.setDefaultCloseOperation(DISPOSE_ON_CLOSE);
+
+		this.prevButton = new JButton("<");
+		this.nextButton = new JButton(">");
+		this.listModel = new PublicServerListModel(prevButton, nextButton);
+
 		this.setContentPane(this.getContent(serverInfoListModel));
 		this.pack();
 		this.setLocationRelativeTo(frame);
@@ -22,10 +32,6 @@ public class SearchServersDialog extends JDialog {
 	private Container getContent(ServerInfoListModel serverInfoListModel) {
 		JPanel panel = new JPanel(new BorderLayout());
 
-		JButton prevButton = new JButton("<");
-		JButton nextButton = new JButton(">");
-
-		PublicServerListModel listModel = new PublicServerListModel(prevButton, nextButton);
 		JList<PublicServerInfo> serversList = new JList<>(listModel);
 		serversList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 		serversList.setCellRenderer(PublicServerInfo.cellRenderer());
@@ -95,5 +101,11 @@ public class SearchServersDialog extends JDialog {
 			e.printStackTrace();
 			JOptionPane.showMessageDialog(this, "Could not connect:\n" + e.getMessage(), "Connection Error", JOptionPane.WARNING_MESSAGE);
 		}
+	}
+
+	@Override
+	public void dispose() {
+		this.listModel.dispose();
+		super.dispose();
 	}
 }

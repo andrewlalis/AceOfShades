@@ -4,5 +4,8 @@ core/target/
 server/target/
 server-registry/target/
 *.iml
+
+# Server files for testing.
 /settings.yaml
 /*.log
+/icon.png

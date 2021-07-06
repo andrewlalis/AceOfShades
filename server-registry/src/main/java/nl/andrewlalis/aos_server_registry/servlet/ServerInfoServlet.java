@@ -10,12 +10,15 @@ import nl.andrewlalis.aos_server_registry.util.Responses;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
@@ -50,7 +53,7 @@ public class ServerInfoServlet extends HttpServlet {
 		var info = Requests.getBody(req, ServerInfoUpdate.class);
 		try {
 			this.saveNewServer(info);
-			Responses.ok(resp, Map.of("message", "Server info saved."));
+			Responses.ok(resp, Map.of("message", "Server icon saved."));
 		} catch (SQLException e) {
 			e.printStackTrace();
 			Responses.internalServerError(resp, "Database error.");
@@ -63,11 +66,11 @@ public class ServerInfoServlet extends HttpServlet {
 		this.updateServerStatus(status, resp);
 	}
 
-	private List<ServerInfoResponse> getData(int size, int page, String searchQuery, String order, String orderDir) throws SQLException {
+	private List<ServerInfoResponse> getData(int size, int page, String searchQuery, String order, String orderDir) throws SQLException, IOException {
 		final List<ServerInfoResponse> results = new ArrayList<>(20);
 		var con = DataManager.getInstance().getConnection();
 		String selectQuery = """
-			SELECT name, address, updated_at, description, location, max_players, current_players
+			SELECT name, address, updated_at, description, location, icon, max_players, current_players
 			FROM servers
 			//CONDITIONS
 			ORDER BY name
@@ -87,14 +90,21 @@ public class ServerInfoServlet extends HttpServlet {
 		stmt.setInt(index, page * size);
 		ResultSet rs = stmt.executeQuery();
 		while (rs.next()) {
+			// Attempt to load the server's icon, if it is not null.
+			InputStream iconInputStream = rs.getBinaryStream(6);
+			String encodedIconImage = null;
+			if (iconInputStream != null) {
+				encodedIconImage = Base64.getUrlEncoder().encodeToString(iconInputStream.readAllBytes());
+			}
 			results.add(new ServerInfoResponse(
 				rs.getString(1),
 				rs.getString(2),
 				rs.getTimestamp(3).toInstant().atOffset(ZoneOffset.UTC).toString(),
 				rs.getString(4),
 				rs.getString(5),
-				rs.getInt(6),
-				rs.getInt(7)
+				encodedIconImage,
+				rs.getInt(7),
+				rs.getInt(8)
 			));
 		}
 		stmt.close();
@@ -111,30 +121,40 @@ public class ServerInfoServlet extends HttpServlet {
 		stmt.close();
 		if (!exists) {
 			PreparedStatement createStmt = con.prepareStatement("""
-				INSERT INTO servers (name, address, description, location, max_players, current_players)
-				VALUES (?, ?, ?, ?, ?, ?);
+				INSERT INTO servers (name, address, description, location, icon, max_players, current_players)
+				VALUES (?, ?, ?, ?, ?, ?, ?);
 				""");
 			createStmt.setString(1, info.name());
 			createStmt.setString(2, info.address());
 			createStmt.setString(3, info.description());
 			createStmt.setString(4, info.location());
-			createStmt.setInt(5, info.maxPlayers());
-			createStmt.setInt(6, info.currentPlayers());
+			InputStream inputStream = null;
+			if (info.icon() != null) {
+				inputStream = new ByteArrayInputStream(Base64.getUrlDecoder().decode(info.icon()));
+			}
+			createStmt.setBinaryStream(5, inputStream);
+			createStmt.setInt(6, info.maxPlayers());
+			createStmt.setInt(7, info.currentPlayers());
 			int rowCount = createStmt.executeUpdate();
 			createStmt.close();
 			if (rowCount != 1) throw new SQLException("Could not insert new server.");
 			log.info("Registered new server " + info.name() + " @ " + info.address());
 		} else {
 			PreparedStatement updateStmt = con.prepareStatement("""
-				UPDATE servers SET description = ?, location = ?, max_players = ?, current_players = ?
+				UPDATE servers SET description = ?, location = ?, icon = ?, max_players = ?, current_players = ?
 				WHERE name = ? AND address = ?;
 				""");
 			updateStmt.setString(1, info.description());
 			updateStmt.setString(2, info.location());
-			updateStmt.setInt(3, info.maxPlayers());
-			updateStmt.setInt(4, info.currentPlayers());
-			updateStmt.setString(5, info.name());
-			updateStmt.setString(6, info.address());
+			InputStream inputStream = null;
+			if (info.icon() != null) {
+				inputStream = new ByteArrayInputStream(Base64.getUrlDecoder().decode(info.icon()));
+			}
+			updateStmt.setBinaryStream(3, inputStream);
+			updateStmt.setInt(4, info.maxPlayers());
+			updateStmt.setInt(5, info.currentPlayers());
+			updateStmt.setString(6, info.name());
+			updateStmt.setString(7, info.address());
 			int rowCount = updateStmt.executeUpdate();
 			updateStmt.close();
 			if (rowCount != 1) throw new SQLException("Could not update server.");

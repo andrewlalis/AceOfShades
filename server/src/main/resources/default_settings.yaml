@@ -28,6 +28,8 @@ registry-settings:
   description: "A simple testing server for development."
   # Location of this server, to help players choose servers near to them.
   location: "Earth"
+  # Note: To set an icon for this server, add an "icon.png" image to the server's directory (where the settings are).
+  # The icon MUST be 64x64 pixels in size.
 
 
 # Settings that control player behavior.

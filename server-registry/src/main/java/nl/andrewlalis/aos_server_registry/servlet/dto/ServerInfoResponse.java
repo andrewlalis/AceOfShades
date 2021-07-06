@@ -6,6 +6,7 @@ public record ServerInfoResponse(
 	String updatedAt,
 	String description,
 	String location,
+	String icon,
 	int maxPlayers,
 	int currentPlayers
 ) {}

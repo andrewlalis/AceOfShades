@@ -5,6 +5,7 @@ public record ServerInfoUpdate (
 	String address,
 	String description,
 	String location,
+	String icon,
 	int maxPlayers,
 	int currentPlayers
 ) {}

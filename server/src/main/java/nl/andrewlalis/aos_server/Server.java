@@ -1,9 +1,5 @@
 package nl.andrewlalis.aos_server;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.PropertyNamingStrategies;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import nl.andrewlalis.aos_core.geom.Vec2;
 import nl.andrewlalis.aos_core.model.*;
 import nl.andrewlalis.aos_core.model.tools.GunCategory;
@@ -26,9 +22,7 @@ import java.net.Socket;
 import java.net.SocketException;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.TimeUnit;
 
 public class Server {
 	private final ServerSettings settings;

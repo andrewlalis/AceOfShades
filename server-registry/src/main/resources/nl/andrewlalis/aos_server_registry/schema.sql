@@ -7,6 +7,7 @@ CREATE TABLE servers (
     updated_at TIMESTAMP(0) WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP(0),
     description VARCHAR(1024),
     location VARCHAR(64),
+    icon BLOB NULL DEFAULT NULL,
 
     max_players INTEGER NOT NULL,
     current_players INTEGER NOT NULL,
