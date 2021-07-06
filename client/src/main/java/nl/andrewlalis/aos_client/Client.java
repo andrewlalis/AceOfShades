@@ -1,8 +1,11 @@
 package nl.andrewlalis.aos_client;
 
+import nl.andrewlalis.aos_client.net.ChatManager;
+import nl.andrewlalis.aos_client.net.MessageTransceiver;
 import nl.andrewlalis.aos_client.sound.SoundManager;
 import nl.andrewlalis.aos_client.view.GameFrame;
 import nl.andrewlalis.aos_client.view.GamePanel;
+import nl.andrewlalis.aos_client.view.GameRenderer;
 import nl.andrewlalis.aos_core.model.Player;
 import nl.andrewlalis.aos_core.model.Team;
 import nl.andrewlalis.aos_core.model.World;

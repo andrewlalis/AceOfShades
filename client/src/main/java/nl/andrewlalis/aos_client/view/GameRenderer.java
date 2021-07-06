@@ -1,6 +1,6 @@
-package nl.andrewlalis.aos_client;
+package nl.andrewlalis.aos_client.view;
 
-import nl.andrewlalis.aos_client.view.GamePanel;
+import nl.andrewlalis.aos_client.Client;
 import nl.andrewlalis.aos_core.model.Bullet;
 import nl.andrewlalis.aos_core.model.Player;
 import nl.andrewlalis.aos_core.model.World;

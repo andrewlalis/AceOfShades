@@ -1,5 +1,6 @@
-package nl.andrewlalis.aos_client;
+package nl.andrewlalis.aos_client.net;
 
+import nl.andrewlalis.aos_client.Client;
 import nl.andrewlalis.aos_core.net.*;
 import nl.andrewlalis.aos_core.net.chat.ChatMessage;
 

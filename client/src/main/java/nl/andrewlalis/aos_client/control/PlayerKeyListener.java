@@ -1,6 +1,6 @@
 package nl.andrewlalis.aos_client.control;
 
-import nl.andrewlalis.aos_client.ChatManager;
+import nl.andrewlalis.aos_client.net.ChatManager;
 import nl.andrewlalis.aos_client.Client;
 
 import java.awt.event.KeyAdapter;

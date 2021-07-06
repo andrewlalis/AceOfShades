@@ -1,6 +1,6 @@
 package nl.andrewlalis.aos_client.view;
 
-import nl.andrewlalis.aos_client.ChatManager;
+import nl.andrewlalis.aos_client.net.ChatManager;
 import nl.andrewlalis.aos_client.Client;
 import nl.andrewlalis.aos_core.model.*;
 import nl.andrewlalis.aos_core.model.tools.Gun;

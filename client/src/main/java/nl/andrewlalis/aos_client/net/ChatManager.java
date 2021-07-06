@@ -1,4 +1,4 @@
-package nl.andrewlalis.aos_client;
+package nl.andrewlalis.aos_client.net;
 
 import nl.andrewlalis.aos_client.sound.SoundManager;
 import nl.andrewlalis.aos_core.net.chat.ChatMessage;

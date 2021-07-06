@@ -1,5 +1,6 @@
-package nl.andrewlalis.aos_client;
+package nl.andrewlalis.aos_client.net;
 
+import nl.andrewlalis.aos_client.Client;
 import nl.andrewlalis.aos_core.net.data.DataTypes;
 import nl.andrewlalis.aos_core.net.data.PlayerDetailUpdate;
 import nl.andrewlalis.aos_core.net.data.WorldUpdate;
