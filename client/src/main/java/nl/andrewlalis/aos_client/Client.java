@@ -27,6 +27,14 @@ public class Client {
 
 	private final GameFrame frame;
 
+	/**
+	 * Initializes and starts the client, connecting immediately to a server
+	 * according to the given host, port, and username.
+	 * @param serverHost The server's host name or ip to connect to.
+	 * @param serverPort The server's port to connect to.
+	 * @param username The player's username to use when connecting.
+	 * @throws IOException If the connection could not be initialized.
+	 */
 	public Client(String serverHost, int serverPort, String username) throws IOException {
 		this.soundManager = new SoundManager();
 		this.chatManager = new ChatManager(this.soundManager);
@@ -59,6 +67,11 @@ public class Client {
 		return world;
 	}
 
+	/**
+	 * Updates the client's version of the world according to an update packet
+	 * that was received from the server.
+	 * @param update The update packet from the server.
+	 */
 	public void updateWorld(WorldUpdate update) {
 		if (this.world == null) return;
 		this.world.getBullets().clear();
@@ -95,6 +108,11 @@ public class Client {
 		return myPlayer;
 	}
 
+	/**
+	 * Updates the client's own player data according to an update from the
+	 * server.
+	 * @param update The updated player information from the server.
+	 */
 	public void updatePlayer(PlayerDetailUpdate update) {
 		if (this.myPlayer == null) return;
 		this.myPlayer.setHealth(update.getHealth());
@@ -102,6 +120,10 @@ public class Client {
 		this.myPlayer.setGun(new Gun(this.myPlayer.getGun().getType(), update.getGunCurrentClipBulletCount(), update.getGunClipCount()));
 	}
 
+	/**
+	 * Sends a player control state message to the server, which indicates that
+	 * the player's controls have been updated, due to a key or mouse event.
+	 */
 	public void sendPlayerState() {
 		try {
 			this.messageTransceiver.sendData(DataTypes.PLAYER_CONTROL_STATE, myPlayer.getId(), myPlayer.getState().toBytes());
@@ -110,6 +132,9 @@ public class Client {
 		}
 	}
 
+	/**
+	 * Shuts down the client.
+	 */
 	public void shutdown() {
 		this.chatManager.unbindTransceiver();
 		System.out.println("Chat manager shutdown.");

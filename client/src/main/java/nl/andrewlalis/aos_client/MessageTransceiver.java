@@ -13,15 +13,44 @@ import java.util.concurrent.Executors;
 
 /**
  * This thread is responsible for handling TCP message communication with the
- * server.
+ * server. During its {@link MessageTransceiver#run()} method, it will try to
+ * receive objects from the server, and process them.
+ * <p>
+ *     It also manages an internal UDP transceiver for sending and receiving
+ *     high volume, lightweight data packets about things like world updates and
+ *     player input events.
+ * </p>
  */
 public class MessageTransceiver extends Thread {
+	/**
+	 * A reference to the client that this transceiver thread is working for.
+	 */
 	private final Client client;
 
+	/**
+	 * The TCP socket that's used for communication.
+	 */
 	private final Socket socket;
+
+	/**
+	 * An internal datagram transceiver that is used for UDP communication.
+	 */
 	private final DataTransceiver dataTransceiver;
+
+	/**
+	 * Output stream that is used for sending objects to the server.
+	 */
 	private final ObjectOutputStream out;
+
+	/**
+	 * Input stream that is used for receiving objects from the server.
+	 */
 	private final ObjectInputStream in;
+
+	/**
+	 * A single-threaded executor that is used to queue and send messages to the
+	 * server sequentially without blocking the main transceiver thread.
+	 */
 	private final ExecutorService writeService = Executors.newFixedThreadPool(1);
 
 	private volatile boolean running = true;
@@ -80,6 +109,11 @@ public class MessageTransceiver extends Thread {
 		}
 	}
 
+	/**
+	 * Sends a message to the server, by submitting it to the write service's
+	 * queue.
+	 * @param message The message to send.
+	 */
 	public void send(Message message) {
 		if (this.socket.isClosed()) return;
 		this.writeService.submit(() -> {
@@ -92,6 +126,13 @@ public class MessageTransceiver extends Thread {
 		});
 	}
 
+	/**
+	 * Sends a packet via UDP to the server.
+	 * @param type The type of data to send.
+	 * @param playerId The id of the player.
+	 * @param data The data to send.
+	 * @throws IOException If the data could not be sent.
+	 */
 	public void sendData(byte type, int playerId, byte[] data) throws IOException {
 		ByteBuffer buffer = ByteBuffer.allocate(1 + Integer.BYTES + data.length);
 		buffer.put(type);
