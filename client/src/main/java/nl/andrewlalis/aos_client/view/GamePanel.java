@@ -14,22 +14,44 @@ import java.awt.geom.AffineTransform;
 import java.awt.geom.Ellipse2D;
 import java.awt.geom.Rectangle2D;
 
+/**
+ * The game panel is the component in which the entire game is rendered. It uses
+ * a custom implementation of {@link JPanel#paintComponent(Graphics)} to draw
+ * the current state of the game.
+ */
 public class GamePanel extends JPanel {
+	/**
+	 * A reference to the client that will be the source of game data to render.
+	 */
 	private final Client client;
 
+	/**
+	 * The list of possible view scale factors.
+	 */
 	private final double[] scales = {1.0, 2.5, 5.0, 10.0,  15.0, 20.0, 25.0, 30.0, 35.0};
+
+	/**
+	 * The view's current scale factor, as an index of the
+	 * {@link GamePanel#scales} array.
+	 */
 	private int scaleIndex = 3;
 
 	public GamePanel(Client client) {
 		this.client = client;
 	}
 
+	/**
+	 * Increments the client's view scaling by one index, if possible.
+	 */
 	public void incrementScale() {
 		if (scaleIndex < scales.length - 1) {
 			scaleIndex++;
 		}
 	}
 
+	/**
+	 * Decrements the client's view scaling by one index, if possible.
+	 */
 	public void decrementScale() {
 		if (scaleIndex > 0) {
 			scaleIndex--;
@@ -55,6 +77,12 @@ public class GamePanel extends JPanel {
 		drawChat(g2);
 	}
 
+	/**
+	 * Draws the current game world, including all objects, players, bullets,
+	 * and other structures.
+	 * @param g2 The graphics context.
+	 * @param world The world to render.
+	 */
 	private void drawWorld(Graphics2D g2, World world) {
 		Player myPlayer = client.getPlayer();
 		if (myPlayer == null) return;
@@ -83,6 +111,16 @@ public class GamePanel extends JPanel {
 		g2.fillRect(0, 0, this.getWidth(), this.getHeight());
 	}
 
+	/**
+	 * Obtains a transformation matrix that can be used when rendering the world
+	 * so that everything is scaled according to the player's view scaling, and
+	 * their team's orientation, and makes sure that the player is in the center
+	 * of the view.
+	 * @param player The player to get the transform for.
+	 * @param scale The current view scale factor.
+	 * @return A transformation matrix that can be applied to all subsequent
+	 * rendering operations.
+	 */
 	private AffineTransform getWorldTransform(Player player, double scale) {
 		AffineTransform tx = new AffineTransform();
 		tx.scale(scale, scale);
@@ -96,6 +134,12 @@ public class GamePanel extends JPanel {
 		return tx;
 	}
 
+	/**
+	 * Draws the world's basic shape and objects. This includes the world's own
+	 * area, and any fixed barricades in it, as well as various team structures.
+	 * @param g2 The graphics context.
+	 * @param world The world to draw.
+	 */
 	private void drawField(Graphics2D g2, World world) {
 		g2.setColor(Color.LIGHT_GRAY);
 		g2.fill(new Rectangle2D.Double(0, 0, world.getSize().x(), world.getSize().y()));
@@ -130,6 +174,13 @@ public class GamePanel extends JPanel {
 		}
 	}
 
+	/**
+	 * Draws all players in the world. In order to make drawing the various
+	 * parts of the player easier, we apply a transformation on top of the world
+	 * transform, such that the player is at (0, 0) and facing upwards.
+	 * @param g2 The graphics context.
+	 * @param world The world to get the list of players from.
+	 */
 	private void drawPlayers(Graphics2D g2, World world) {
 		for (Player p : world.getPlayers().values()) {
 			AffineTransform pre = g2.getTransform();
@@ -147,6 +198,11 @@ public class GamePanel extends JPanel {
 		}
 	}
 
+	/**
+	 * Draws a player's gun.
+	 * @param g2 The graphics context.
+	 * @param gun The gun to draw.
+	 */
 	private void drawGun(Graphics2D g2, Gun gun) {
 		g2.setColor(Color.decode(gun.getType().getColor()));
 		Rectangle2D.Double gunBarrel = new Rectangle2D.Double(
@@ -158,6 +214,11 @@ public class GamePanel extends JPanel {
 		g2.fill(gunBarrel);
 	}
 
+	/**
+	 * Draws the list of bullets in the world.
+	 * @param g2 The graphics context.
+	 * @param world The world to get the list of bullets from.
+	 */
 	private void drawBullets(Graphics2D g2, World world) {
 		g2.setColor(Color.BLACK);
 		double bulletSize = 0.25;
@@ -172,6 +233,14 @@ public class GamePanel extends JPanel {
 		}
 	}
 
+	/**
+	 * Draws player-oriented markers such as the player's name. These are done
+	 * in a separate step from the player rendering, to ensure that names are
+	 * not obscured by other objects.
+	 * @param g2 The graphics context.
+	 * @param world The world.
+	 * @param myPlayer The reference to this client's player.
+	 */
 	private void drawMarkers(Graphics2D g2, World world, Player myPlayer) {
 		g2.setColor(Color.WHITE);
 		for (Player p : world.getPlayers().values()) {
@@ -187,6 +256,10 @@ public class GamePanel extends JPanel {
 		}
 	}
 
+	/**
+	 * Draws the list of chat messages in the top-left corner of the screen.
+	 * @param g2 The graphics context.
+	 */
 	private void drawChat(Graphics2D g2) {
 		int height = g2.getFontMetrics().getHeight();
 		int y = height;
@@ -220,6 +293,11 @@ public class GamePanel extends JPanel {
 		}
 	}
 
+	/**
+	 * Draws player status information in the bottom-left corner of the screen.
+	 * @param g2 The graphics context.
+	 * @param world The world containing the player's data.
+	 */
 	private void drawStatus(Graphics2D g2, World world) {
 		Player myPlayer = this.client.getPlayer();
 		if (myPlayer == null) return;
