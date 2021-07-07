@@ -6,6 +6,9 @@ import java.util.function.Function;
 
 import static nl.andrewlalis.aos_server_registry.ServerRegistry.mapper;
 
+/**
+ * Helper methods for working with HTTP requests.
+ */
 public class Requests {
 	public static <T> T getBody(HttpServletRequest req, Class<T> bodyClass) throws IOException {
 		return mapper.readValue(req.getInputStream(), bodyClass);

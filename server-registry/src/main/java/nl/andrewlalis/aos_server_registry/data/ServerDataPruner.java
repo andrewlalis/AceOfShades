@@ -9,8 +9,13 @@ import java.util.logging.Logger;
  * registry which have not been updated in a while.
  */
 public class ServerDataPruner implements Runnable {
-	public static final int INTERVAL_MINUTES = 5;
 	private static final Logger log = Logger.getLogger(ServerDataPruner.class.getName());
+
+	private final long intervalMinutes;
+
+	public ServerDataPruner(long intervalMinutes) {
+		this.intervalMinutes = intervalMinutes;
+	}
 
 	@Override
 	public void run() {
@@ -21,7 +26,7 @@ public class ServerDataPruner implements Runnable {
 					WHERE DATEDIFF('MINUTE', servers.updated_at, CURRENT_TIMESTAMP(0)) > ?
 					""";
 			PreparedStatement stmt = con.prepareStatement(sql);
-			stmt.setInt(1, INTERVAL_MINUTES);
+			stmt.setLong(1, this.intervalMinutes);
 			int rowCount = stmt.executeUpdate();
 			stmt.close();
 			if (rowCount > 0) {

@@ -16,9 +16,7 @@ import java.time.Duration;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 /**
  * The registry manager is responsible for keeping the server registry up to
@@ -33,11 +31,21 @@ public class RegistryManager {
 	public static final long[] RETRY_TIMINGS = new long[]{5, 10, 30, 60, 120, 300};
 	private int retryTimingIndex = 0;
 
+	private static final String ICON_FILE = "icon.png";
+	private static final int ICON_SIZE = 64;
+
 	private final ScheduledExecutorService executorService;
 	private final Server server;
-
 	private final ObjectMapper mapper;
 	private final HttpClient httpClient;
+
+	/**
+	 * Future that represents a planned attempt to send this server's info to
+	 * the registry. This is tracked so that we can cancel this attempt if we
+	 * discover during a more frequent update ping that the registry has been
+	 * reset.
+	 */
+	private Future<?> infoSendFuture;
 
 	public RegistryManager(Server server) {
 		this.server = server;
@@ -73,14 +81,14 @@ public class RegistryManager {
 				var response = this.httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 				if (response.statusCode() != 200) {
 					System.err.println("Non-OK status when sending registry info:\n" + response.body() + "\nAttempting to send again in 10 seconds...");
-					this.executorService.schedule(this::sendInfo, 10, TimeUnit.SECONDS);
+					this.infoSendFuture = this.executorService.schedule(this::sendInfo, 10, TimeUnit.SECONDS);
 				} else if (this.retryTimingIndex > 0) {
 					this.retryTimingIndex = 0; // Reset the retry timing index if we successfully sent our server info.
 				}
 			} catch (IOException e) {
 				long retryTiming = RETRY_TIMINGS[this.retryTimingIndex];
 				System.err.println("Could not send info to registry server. Registry may be offline, or this server may not have internet access. Attempting to resend info in " + retryTiming + " seconds...");
-				this.executorService.schedule(this::sendInfo, retryTiming, TimeUnit.SECONDS);
+				this. infoSendFuture = this.executorService.schedule(this::sendInfo, retryTiming, TimeUnit.SECONDS);
 				if (this.retryTimingIndex < RETRY_TIMINGS.length - 1) {
 					this.retryTimingIndex++;
 				}
@@ -103,8 +111,15 @@ public class RegistryManager {
 				.build();
 			try {
 				var response = this.httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-				if (response.statusCode() != 200) {
-					System.err.println("Received non-OK status when sending registry update:\n" + response.body());
+				if (response.statusCode() == 404) {
+					System.out.println("Registry doesn't recognize this server yet. Sending info now...");
+					// Cancel any existing plans to send info in the future, and send it now.
+					if (this.infoSendFuture != null && !this.infoSendFuture.isDone()) {
+						this.infoSendFuture.cancel(false);
+					}
+					this.infoSendFuture = this.executorService.submit(this::sendInfo);
+				} else if (response.statusCode() != 200) {
+					System.err.printf("Received status %d when sending registry update:\n%s\n", response.statusCode(), response.body());
 				}
 			} catch (IOException e) {
 				System.err.println("Error sending update to registry server: " + e);
@@ -114,15 +129,24 @@ public class RegistryManager {
 		}
 	}
 
-	private String getIconData() throws IOException {
-		Path iconFile = Path.of("icon.png");
+	/**
+	 * Gets a Base64-URL-encoded string representing the bytes of this server's
+	 * icon, if the server has an icon, or null otherwise.
+	 * @return The Base64-encoded bytes of the server icon, or null.
+	 */
+	private String getIconData() {
+		Path iconFile = Path.of(ICON_FILE);
 		if (Files.exists(iconFile)) {
-			byte[] imageBytes = Files.readAllBytes(iconFile);
-			BufferedImage image = ImageIO.read(new ByteArrayInputStream(imageBytes));
-			if (image.getWidth() == 64 && image.getHeight() == 64) {
-				return Base64.getUrlEncoder().encodeToString(imageBytes);
-			} else {
-				System.err.println("icon.png must be 64 x 64.");
+			try {
+				byte[] imageBytes = Files.readAllBytes(iconFile);
+				BufferedImage image = ImageIO.read(new ByteArrayInputStream(imageBytes));
+				if (image.getWidth() == ICON_SIZE && image.getHeight() == ICON_SIZE) {
+					return Base64.getUrlEncoder().encodeToString(imageBytes);
+				} else {
+					System.err.printf("%s must be %d x %d.\n", ICON_FILE, ICON_SIZE, ICON_SIZE);
+				}
+			} catch (IOException e) {
+				e.printStackTrace();
 			}
 		}
 		return null;
