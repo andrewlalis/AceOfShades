@@ -195,9 +195,12 @@ public class WorldUpdater extends Thread {
 				soundType = SoundType.SHOT_RIFLE;
 			} else if (p.getGun().getType().getCategory() == GunCategory.SHOTGUN) {
 				soundType = SoundType.SHOT_SHOTGUN;
+			} else if (p.getGun().getType().getCategory() == GunCategory.MACHINE) {
+				soundType = ThreadLocalRandom.current().nextFloat() < 0.8f ? SoundType.SHOT_MACHINE_GUN_1 : SoundType.SHOT_MACHINE_GUN_2;
 			}
 			this.worldUpdate.addSound(new Sound(p.getPosition(), 1.0f, soundType));
 			p.useWeapon();
+			p.setVelocity(p.getVelocity().add(p.getOrientation().mul(-1 * p.getGun().getType().getRecoil())));
 		}
 		if (p.getState().isReloading() && !p.isReloading() && p.getGun().canReload()) {
 			p.startReloading();

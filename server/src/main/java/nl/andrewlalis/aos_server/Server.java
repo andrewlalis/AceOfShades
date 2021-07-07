@@ -71,7 +71,8 @@ public class Server {
 				gs.getShotCooldownTime(),
 				gs.getReloadTime(),
 				gs.getBulletSpeed(),
-				gs.getBaseDamage()
+				gs.getBaseDamage(),
+				gs.getRecoil()
 			));
 		}
 

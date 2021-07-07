@@ -52,8 +52,12 @@ public class GunType implements Serializable {
 	 * How much damage the bullet does for a direct hit.
 	 */
 	private final float baseDamage;
+	/**
+	 * How fast the gun pushes the player backwards when shot (in m/s).
+	 */
+	private final float recoil;
 
-	public GunType(String name, GunCategory category, String color, int maxClipCount, int clipSize, int bulletsPerRound, float accuracy, float shotCooldownTime, float reloadTime, float bulletSpeed, float baseDamage) {
+	public GunType(String name, GunCategory category, String color, int maxClipCount, int clipSize, int bulletsPerRound, float accuracy, float shotCooldownTime, float reloadTime, float bulletSpeed, float baseDamage, float recoil) {
 		this.name = name;
 		this.category = category;
 		this.color = color;
@@ -65,6 +69,7 @@ public class GunType implements Serializable {
 		this.reloadTime = reloadTime;
 		this.bulletSpeed = bulletSpeed;
 		this.baseDamage = baseDamage;
+		this.recoil = recoil;
 	}
 
 	public String getName() {
@@ -109,5 +114,9 @@ public class GunType implements Serializable {
 
 	public float getBaseDamage() {
 		return baseDamage;
+	}
+
+	public float getRecoil() {
+		return recoil;
 	}
 }

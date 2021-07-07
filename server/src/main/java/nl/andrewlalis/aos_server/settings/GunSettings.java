@@ -12,6 +12,7 @@ public class GunSettings {
 	private float reloadTime;
 	private float bulletSpeed;
 	private float baseDamage;
+	private float recoil;
 
 	public String getName() {
 		return name;
@@ -55,5 +56,9 @@ public class GunSettings {
 
 	public float getBaseDamage() {
 		return baseDamage;
+	}
+
+	public float getRecoil() {
+		return recoil;
 	}
 }

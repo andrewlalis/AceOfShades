@@ -105,22 +105,7 @@ public class PublicServerListModel extends AbstractListModel<PublicServerInfo> {
 				this.currentOrderDir = json.get("orderDirection").asText();
 				this.currentPageItems.clear();
 				for (Iterator<JsonNode> it = json.get("contents").elements(); it.hasNext();) {
-					JsonNode node = it.next();
-					Image icon = null;
-					JsonNode iconNode = node.get("icon");
-					if (iconNode != null && iconNode.getNodeType() == JsonNodeType.STRING) {
-						icon = ImageIO.read(new ByteArrayInputStream(Base64.getUrlDecoder().decode(iconNode.textValue())));
-					}
-					PublicServerInfo info = new PublicServerInfo(
-						node.get("name").asText(),
-						node.get("address").asText(),
-						node.get("description").asText(),
-						node.get("location").asText(),
-						icon,
-						node.get("maxPlayers").asInt(),
-						node.get("currentPlayers").asInt()
-					);
-					this.currentPageItems.add(info);
+					this.addServerInfoFromJson(it.next());
 				}
 				this.fireContentsChanged(this, 0, this.getSize());
 			} catch (IOException e) {
@@ -153,6 +138,24 @@ public class PublicServerListModel extends AbstractListModel<PublicServerInfo> {
 	@Override
 	public PublicServerInfo getElementAt(int index) {
 		return this.currentPageItems.get(index);
+	}
+
+	public void addServerInfoFromJson(JsonNode node) throws IOException {
+		Image icon = null;
+		JsonNode iconNode = node.get("icon");
+		if (iconNode != null && iconNode.getNodeType() == JsonNodeType.STRING) {
+			icon = ImageIO.read(new ByteArrayInputStream(Base64.getUrlDecoder().decode(iconNode.textValue())));
+		}
+		PublicServerInfo info = new PublicServerInfo(
+				node.get("name").asText(),
+				node.get("address").asText(),
+				node.get("description").asText(),
+				node.get("location").asText(),
+				icon,
+				node.get("maxPlayers").asInt(),
+				node.get("currentPlayers").asInt()
+		);
+		this.currentPageItems.add(info);
 	}
 
 	public void dispose() {

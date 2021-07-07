@@ -3,7 +3,8 @@ package nl.andrewlalis.aos_core.model.tools;
 public enum GunCategory {
 	SHOTGUN(0),
 	SMG(1),
-	RIFLE(2);
+	RIFLE(2),
+	MACHINE(3);
 
 	private final byte code;
 
