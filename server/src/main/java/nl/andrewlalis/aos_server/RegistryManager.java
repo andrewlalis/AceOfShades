@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
-import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.URI;
@@ -26,6 +25,14 @@ import java.util.concurrent.TimeUnit;
  * date with this server's information, by sending periodic update HTTP messages.
  */
 public class RegistryManager {
+	/**
+	 * The list of retry timings that will be used if the registry server cannot
+	 * be reached. Using the retryTimingIndex, we'll start at 5, and increment
+	 * each time the connection fails.
+	 */
+	public static final long[] RETRY_TIMINGS = new long[]{5, 10, 30, 60, 120, 300};
+	private int retryTimingIndex = 0;
+
 	private final ScheduledExecutorService executorService;
 	private final Server server;
 
@@ -36,10 +43,7 @@ public class RegistryManager {
 		this.server = server;
 		this.mapper = new ObjectMapper();
 		this.executorService = Executors.newScheduledThreadPool(3);
-		this.httpClient = HttpClient.newBuilder()
-			.executor(this.executorService)
-			.connectTimeout(Duration.ofSeconds(3))
-			.build();
+		this.httpClient = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(3)).build();
 		this.executorService.submit(this::sendInfo);
 		this.executorService.scheduleAtFixedRate(
 			this::sendUpdate,
@@ -64,7 +68,23 @@ public class RegistryManager {
 				.POST(HttpRequest.BodyPublishers.ofByteArray(this.mapper.writeValueAsBytes(data)))
 				.header("Content-Type", "application/json")
 				.build();
-			this.httpClient.sendAsync(request, HttpResponse.BodyHandlers.discarding());
+			try {
+				System.out.println("Sending server information to registry...");
+				var response = this.httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+				if (response.statusCode() != 200) {
+					System.err.println("Non-OK status when sending registry info:\n" + response.body() + "\nAttempting to send again in 10 seconds...");
+					this.executorService.schedule(this::sendInfo, 10, TimeUnit.SECONDS);
+				} else if (this.retryTimingIndex > 0) {
+					this.retryTimingIndex = 0; // Reset the retry timing index if we successfully sent our server info.
+				}
+			} catch (IOException e) {
+				long retryTiming = RETRY_TIMINGS[this.retryTimingIndex];
+				System.err.println("Could not send info to registry server. Registry may be offline, or this server may not have internet access. Attempting to resend info in " + retryTiming + " seconds...");
+				this.executorService.schedule(this::sendInfo, retryTiming, TimeUnit.SECONDS);
+				if (this.retryTimingIndex < RETRY_TIMINGS.length - 1) {
+					this.retryTimingIndex++;
+				}
+			}
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -81,13 +101,14 @@ public class RegistryManager {
 				.PUT(HttpRequest.BodyPublishers.ofByteArray(this.mapper.writeValueAsBytes(data)))
 				.header("Content-Type", "application/json")
 				.build();
-			this.httpClient.sendAsync(request, responseInfo -> {
-				if (responseInfo.statusCode() != 200) {
-					System.out.println("Received non-OK status when sending registry update. Re-sending registry info...");
-					this.sendInfo();
+			try {
+				var response = this.httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+				if (response.statusCode() != 200) {
+					System.err.println("Received non-OK status when sending registry update:\n" + response.body());
 				}
-				return null;
-			});
+			} catch (IOException e) {
+				System.err.println("Error sending update to registry server: " + e);
+			}
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

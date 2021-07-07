@@ -19,7 +19,7 @@ registry-settings:
   # The URI which points to the registry server. This is only used if discoverable is true.
   registry-uri: "http://localhost:8567"
   # How often to send status updates to the registry server, in seconds.
-  update-interval: 10
+  update-interval: 30
   # The name of this server.
   name: "Testing Server"
   # The address that clients can use to connect to this server.
