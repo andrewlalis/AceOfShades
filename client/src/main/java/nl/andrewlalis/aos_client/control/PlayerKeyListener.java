@@ -20,6 +20,15 @@ public class PlayerKeyListener extends KeyAdapter {
 		if (!this.chatManager.isChatting()) {
 			if ((e.getKeyChar() == 't' || e.getKeyChar() == '/')) {
 				this.chatManager.setChatting(true);
+				var s = this.client.getPlayer().getState();
+				s.setMovingForward(false);
+				s.setMovingBackward(false);
+				s.setMovingLeft(false);
+				s.setMovingRight(false);
+				s.setReloading(false);
+				s.setSneaking(false);
+				s.setSprinting(false);
+				this.client.sendPlayerState();
 				if (e.getKeyChar() == '/') this.chatManager.appendToChat('/');
 			}
 		} else if (this.chatManager.isChatting()) {

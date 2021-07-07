@@ -49,7 +49,6 @@ public class Server {
 		this.worldUpdater = new WorldUpdater(this, this.world);
 		this.chatManager = new ChatManager(this);
 		if (settings.getRegistrySettings().isDiscoverable()) {
-			System.out.println("Starting registry communications.");
 			this.registryManager = new RegistryManager(this);
 		}
 	}
