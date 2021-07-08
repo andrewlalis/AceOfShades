@@ -25,6 +25,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class Server {
+	public static final String VERSION = "0.5.0";
 	private final ServerSettings settings;
 
 	private final List<ClientHandler> clientHandlers;
@@ -263,6 +264,7 @@ public class Server {
 
 
 	public static void main(String[] args) throws IOException {
+		System.out.println("Starting Ace of Shades Server version " + VERSION + ".");
 		Server server = new Server(SettingsLoader.load());
 		server.run();
 	}

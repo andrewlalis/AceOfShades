@@ -66,6 +66,7 @@ public class RegistryManager {
 			Map<String, Object> data = new HashMap<>();
 			data.put("name", this.server.getSettings().getRegistrySettings().getName());
 			data.put("address", this.server.getSettings().getRegistrySettings().getAddress());
+			data.put("version", Server.VERSION);
 			data.put("description", this.server.getSettings().getRegistrySettings().getDescription());
 			data.put("location", this.server.getSettings().getRegistrySettings().getLocation());
 			data.put("icon", this.getIconData());

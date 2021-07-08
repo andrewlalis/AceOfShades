@@ -21,6 +21,12 @@ public class Responses {
 		mapper.writeValue(resp.getOutputStream(), body);
 	}
 
+	public static void json(HttpServletResponse resp, int status, Object body) throws IOException {
+		resp.setStatus(status);
+		resp.setContentType("application/json");
+		mapper.writeValue(resp.getOutputStream(), body);
+	}
+
 	public static void badRequest(HttpServletResponse resp, String msg) throws IOException {
 		respond(resp, HttpServletResponse.SC_BAD_REQUEST, msg);
 	}

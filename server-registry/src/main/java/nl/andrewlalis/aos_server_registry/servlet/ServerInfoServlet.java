@@ -40,7 +40,7 @@ public class ServerInfoServlet extends HttpServlet {
 		));
 		String orderDir = Requests.getStringParam(req, "dir", "ASC", s -> s.equalsIgnoreCase("ASC") || s.equalsIgnoreCase("DESC"));
 		try {
-			var results = this.getData(size, page, searchQuery, order, orderDir);
+			var results = this.getData(size, page, searchQuery, null, order, orderDir);
 			Responses.ok(resp, new Page<>(results, page, size, order, orderDir));
 		} catch (SQLException t) {
 			t.printStackTrace();
@@ -54,6 +54,8 @@ public class ServerInfoServlet extends HttpServlet {
 		try {
 			this.saveNewServer(info);
 			Responses.ok(resp, Map.of("message", "Server icon saved."));
+		} catch (ResponseStatusException e) {
+			Responses.json(resp, e.getStatusCode(), Map.of("message", e.getMessage()));
 		} catch (SQLException e) {
 			e.printStackTrace();
 			Responses.internalServerError(resp, "Database error.");
@@ -66,11 +68,11 @@ public class ServerInfoServlet extends HttpServlet {
 		this.updateServerStatus(status, resp);
 	}
 
-	private List<ServerInfoResponse> getData(int size, int page, String searchQuery, String order, String orderDir) throws SQLException, IOException {
+	private List<ServerInfoResponse> getData(int size, int page, String searchQuery, String versionQuery, String order, String orderDir) throws SQLException, IOException {
 		final List<ServerInfoResponse> results = new ArrayList<>(20);
 		var con = DataManager.getInstance().getConnection();
 		String selectQuery = """
-			SELECT name, address, updated_at, description, location, icon, max_players, current_players
+			SELECT name, address, version, updated_at, description, location, icon, max_players, current_players
 			FROM servers
 			//CONDITIONS
 			ORDER BY name
@@ -78,20 +80,30 @@ public class ServerInfoServlet extends HttpServlet {
 			OFFSET ?
 			""";
 		selectQuery = selectQuery.replace("ORDER BY name", "ORDER BY " + order + " " + orderDir);
+		List<String> conditions = new ArrayList<>();
+		List<Object> conditionParams = new ArrayList<>();
 		if (searchQuery != null && !searchQuery.isBlank()) {
-			selectQuery = selectQuery.replace("//CONDITIONS", "WHERE UPPER(name) LIKE ?");
+			conditions.add("UPPER(name) LIKE ?");
+			conditionParams.add("%" + searchQuery.toUpperCase() + "%");
+		}
+		if (versionQuery != null && !versionQuery.isBlank()) {
+			conditions.add("version = ?");
+			conditionParams.add(versionQuery);
+		}
+		if (!conditions.isEmpty()) {
+			selectQuery = selectQuery.replace("//CONDITIONS", "WHERE " + String.join(" AND ", conditions));
 		}
 		PreparedStatement stmt = con.prepareStatement(selectQuery);
 		int index = 1;
-		if (searchQuery != null && !searchQuery.isBlank()) {
-			stmt.setString(index++, "%" + searchQuery.toUpperCase() + "%");
+		for (var param : conditionParams) {
+			stmt.setObject(index++, param);
 		}
 		stmt.setInt(index++, size);
 		stmt.setInt(index, page * size);
 		ResultSet rs = stmt.executeQuery();
 		while (rs.next()) {
 			// Attempt to load the server's icon, if it is not null.
-			InputStream iconInputStream = rs.getBinaryStream(6);
+			InputStream iconInputStream = rs.getBinaryStream(7);
 			String encodedIconImage = null;
 			if (iconInputStream != null) {
 				encodedIconImage = Base64.getUrlEncoder().encodeToString(iconInputStream.readAllBytes());
@@ -99,19 +111,20 @@ public class ServerInfoServlet extends HttpServlet {
 			results.add(new ServerInfoResponse(
 				rs.getString(1),
 				rs.getString(2),
-				rs.getTimestamp(3).toInstant().atOffset(ZoneOffset.UTC).toString(),
-				rs.getString(4),
+				rs.getString(3),
+				rs.getTimestamp(4).toInstant().atOffset(ZoneOffset.UTC).toString(),
 				rs.getString(5),
+				rs.getString(6),
 				encodedIconImage,
-				rs.getInt(7),
-				rs.getInt(8)
+				rs.getInt(8),
+				rs.getInt(9)
 			));
 		}
 		stmt.close();
 		return results;
 	}
 
-	private void saveNewServer(ServerInfoUpdate info) throws SQLException {
+	private void saveNewServer(ServerInfoUpdate info) throws SQLException, ResponseStatusException {
 		var con = DataManager.getInstance().getConnection();
 		PreparedStatement stmt = con.prepareStatement("SELECT name, address FROM servers WHERE name = ? AND address = ?");
 		stmt.setString(1, info.name());
@@ -119,42 +132,45 @@ public class ServerInfoServlet extends HttpServlet {
 		ResultSet rs = stmt.executeQuery();
 		boolean exists = rs.next();
 		stmt.close();
+		String version = info.version() == null ? "Unknown" : info.version();
 		if (!exists) {
 			PreparedStatement createStmt = con.prepareStatement("""
-				INSERT INTO servers (name, address, description, location, icon, max_players, current_players)
-				VALUES (?, ?, ?, ?, ?, ?, ?);
+				INSERT INTO servers (name, address, version, description, location, icon, max_players, current_players)
+				VALUES (?, ?, ?, ?, ?, ?, ?, ?);
 				""");
 			createStmt.setString(1, info.name());
 			createStmt.setString(2, info.address());
-			createStmt.setString(3, info.description());
-			createStmt.setString(4, info.location());
+			createStmt.setString(3, version);
+			createStmt.setString(4, info.description());
+			createStmt.setString(5, info.location());
 			InputStream inputStream = null;
 			if (info.icon() != null) {
 				inputStream = new ByteArrayInputStream(Base64.getUrlDecoder().decode(info.icon()));
 			}
-			createStmt.setBinaryStream(5, inputStream);
-			createStmt.setInt(6, info.maxPlayers());
-			createStmt.setInt(7, info.currentPlayers());
+			createStmt.setBinaryStream(6, inputStream);
+			createStmt.setInt(7, info.maxPlayers());
+			createStmt.setInt(8, info.currentPlayers());
 			int rowCount = createStmt.executeUpdate();
 			createStmt.close();
 			if (rowCount != 1) throw new SQLException("Could not insert new server.");
-			log.info("Registered new server " + info.name() + " @ " + info.address());
+			log.info("Registered new server " + info.name() + " @ " + info.address() + " running version " + version + ".");
 		} else {
 			PreparedStatement updateStmt = con.prepareStatement("""
-				UPDATE servers SET description = ?, location = ?, icon = ?, max_players = ?, current_players = ?
+				UPDATE servers SET version = ?, description = ?, location = ?, icon = ?, max_players = ?, current_players = ?
 				WHERE name = ? AND address = ?;
 				""");
-			updateStmt.setString(1, info.description());
-			updateStmt.setString(2, info.location());
+			updateStmt.setString(1, version);
+			updateStmt.setString(2, info.description());
+			updateStmt.setString(3, info.location());
 			InputStream inputStream = null;
 			if (info.icon() != null) {
 				inputStream = new ByteArrayInputStream(Base64.getUrlDecoder().decode(info.icon()));
 			}
-			updateStmt.setBinaryStream(3, inputStream);
-			updateStmt.setInt(4, info.maxPlayers());
-			updateStmt.setInt(5, info.currentPlayers());
-			updateStmt.setString(6, info.name());
-			updateStmt.setString(7, info.address());
+			updateStmt.setBinaryStream(4, inputStream);
+			updateStmt.setInt(5, info.maxPlayers());
+			updateStmt.setInt(6, info.currentPlayers());
+			updateStmt.setString(7, info.name());
+			updateStmt.setString(8, info.address());
 			int rowCount = updateStmt.executeUpdate();
 			updateStmt.close();
 			if (rowCount != 1) throw new SQLException("Could not update server.");

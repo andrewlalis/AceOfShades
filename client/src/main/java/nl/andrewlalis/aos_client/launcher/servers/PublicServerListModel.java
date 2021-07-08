@@ -149,6 +149,7 @@ public class PublicServerListModel extends AbstractListModel<PublicServerInfo> {
 		PublicServerInfo info = new PublicServerInfo(
 				node.get("name").asText(),
 				node.get("address").asText(),
+				node.get("version").asText(),
 				node.get("description").asText(),
 				node.get("location").asText(),
 				icon,

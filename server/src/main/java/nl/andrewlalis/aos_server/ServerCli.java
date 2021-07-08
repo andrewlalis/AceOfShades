@@ -43,7 +43,7 @@ public class ServerCli extends Thread {
 	public void run() {
 		this.running = true;
 		String input;
-		System.out.println("Server command-line-interface initialized. Type \"help\" for more information.");
+		System.out.println("AOS-Server command-line-interface initialized. Type \"help\" for more information.");
 		while (this.running) {
 			try {
 				input = reader.readLine();
