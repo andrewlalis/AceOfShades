@@ -36,7 +36,19 @@ public class SoundManager {
 	private static final float CLIP_BUFFER_SIZE = 1.0f / 10.0f;
 
 	private final ExecutorService soundPlayerThreadPool = Executors.newCachedThreadPool();
+
+	/**
+	 * Cached set of audio clips that are used for playing sounds, instead of
+	 * loading each clip's bytes from the disk each time.
+	 */
 	private final Map<String, AudioClip> audioClips = new HashMap<>();
+
+	/**
+	 * Map that keeps track of the last footstep sound made by any player, which
+	 * is used in determining when the next footstep sound should be played. We
+	 * use a {@link TimedCompletableFuture} so that we know how much time has
+	 * elapsed since the footstep started.
+	 */
 	private final Map<Player, TimedCompletableFuture<Void>> footstepAudioFutures = new HashMap<>();
 
 	/**
