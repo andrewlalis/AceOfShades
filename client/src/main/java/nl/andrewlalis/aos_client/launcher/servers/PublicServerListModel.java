@@ -23,7 +23,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 public class PublicServerListModel extends AbstractListModel<PublicServerInfo> {
 	private final List<PublicServerInfo> currentPageItems;
@@ -38,14 +40,12 @@ public class PublicServerListModel extends AbstractListModel<PublicServerInfo> {
 	private final HttpClient client;
 	private final ObjectMapper mapper;
 	private final ScheduledExecutorService executorService;
+	private ScheduledFuture<?> pageFetchFuture;
+	private final List<Consumer<PublicServerListModel>> modelUpdateListeners;
 
-	private final JButton prevButton;
-	private final JButton nextButton;
-
-	public PublicServerListModel(JButton prevButton, JButton nextButton) {
+	public PublicServerListModel() {
 		this.currentPageItems = new ArrayList<>();
-		this.prevButton = prevButton;
-		this.nextButton = nextButton;
+		this.modelUpdateListeners = new ArrayList<>();
 		this.executorService = Executors.newSingleThreadScheduledExecutor();
 		this.client = HttpClient.newBuilder()
 			.executor(this.executorService)
@@ -53,12 +53,19 @@ public class PublicServerListModel extends AbstractListModel<PublicServerInfo> {
 			.build();
 		this.mapper = new ObjectMapper();
 		this.fetchPage(0, null, null, null);
-		this.executorService.scheduleAtFixedRate(
-			() -> this.fetchPage(this.currentPage, this.currentQuery, this.currentOrder, this.currentOrderDir),
-			5,
-			5,
-			TimeUnit.SECONDS
+	}
+
+	public void scheduleAutoPageFetch() {
+		this.pageFetchFuture = this.executorService.scheduleAtFixedRate(
+				() -> this.fetchPage(this.currentPage, this.currentQuery, this.currentOrder, this.currentOrderDir),
+				5,
+				5,
+				TimeUnit.SECONDS
 		);
+	}
+
+	public void addListener(Consumer<PublicServerListModel> listener) {
+		this.modelUpdateListeners.add(listener);
 	}
 
 	public void fetchPage(int page) {
@@ -70,6 +77,10 @@ public class PublicServerListModel extends AbstractListModel<PublicServerInfo> {
 	}
 
 	public void fetchPage(int page, String query, String order, String orderDir) {
+		System.out.println("Fetching...");
+		if (this.pageFetchFuture != null && !this.pageFetchFuture.isDone()) {
+			this.pageFetchFuture.cancel(false);
+		}
 		String uri = "http://localhost:8567/serverInfo?page=" + page + "&size=" + this.pageSize;
 		if (query != null && !query.isBlank()) {
 			uri += "&q=" + URLEncoder.encode(query, StandardCharsets.UTF_8);
@@ -88,29 +99,35 @@ public class PublicServerListModel extends AbstractListModel<PublicServerInfo> {
 			return;
 		}
 
-		this.client.sendAsync(request, HttpResponse.BodyHandlers.ofInputStream()).thenAcceptAsync(response -> {
-			if (response.statusCode() != 200) {
+		var requestFuture = this.client.sendAsync(request, HttpResponse.BodyHandlers.ofInputStream());
+		requestFuture.whenCompleteAsync((response, throwable) -> {
+			this.currentPageItems.clear();
+			this.firstPage = true;
+			this.lastPage = true;
+			if (throwable != null) {
+				System.err.println("Could not request data from registry: " + throwable);
+			} else if (response.statusCode() != 200) {
 				System.err.println("Non-OK status code: " + response.statusCode());
-			}
-			try {
-				JsonNode json = this.mapper.readValue(response.body(), JsonNode.class);
-				this.firstPage = json.get("firstPage").asBoolean();
-				this.prevButton.setEnabled(!this.firstPage);
-				this.lastPage = json.get("lastPage").asBoolean();
-				this.nextButton.setEnabled(!this.lastPage);
-				this.currentPage = json.get("currentPage").asInt();
-				this.pageSize = json.get("pageSize").asInt();
-				this.currentQuery = query;
-				this.currentOrder = json.get("order").asText();
-				this.currentOrderDir = json.get("orderDirection").asText();
-				this.currentPageItems.clear();
-				for (Iterator<JsonNode> it = json.get("contents").elements(); it.hasNext();) {
-					this.addServerInfoFromJson(it.next());
+			} else {
+				try {
+					JsonNode json = this.mapper.readValue(response.body(), JsonNode.class);
+					this.firstPage = json.get("firstPage").asBoolean();
+					this.lastPage = json.get("lastPage").asBoolean();
+					this.currentPage = json.get("currentPage").asInt();
+					this.pageSize = json.get("pageSize").asInt();
+					this.currentQuery = query;
+					this.currentOrder = json.get("order").asText();
+					this.currentOrderDir = json.get("orderDirection").asText();
+					for (Iterator<JsonNode> it = json.get("contents").elements(); it.hasNext(); ) {
+						this.addServerInfoFromJson(it.next());
+					}
+					this.scheduleAutoPageFetch();
+				} catch (IOException e) {
+					e.printStackTrace();
 				}
-				this.fireContentsChanged(this, 0, this.getSize());
-			} catch (IOException e) {
-				e.printStackTrace();
 			}
+			this.fireContentsChanged(this, 0, this.getSize());
+			this.modelUpdateListeners.forEach(l -> l.accept(this));
 		});
 	}
 
@@ -160,6 +177,7 @@ public class PublicServerListModel extends AbstractListModel<PublicServerInfo> {
 	}
 
 	public void dispose() {
+		this.modelUpdateListeners.clear();
 		this.executorService.shutdown();
 	}
 }

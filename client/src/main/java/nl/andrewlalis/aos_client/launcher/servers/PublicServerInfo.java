@@ -45,6 +45,7 @@ public record PublicServerInfo(
 			panel.add(addressLabel, c);
 			c.gridy++;
 			JTextArea descriptionArea = new JTextArea(value.description());
+			descriptionArea.setFont(new Font("monospaced", Font.PLAIN, 12));
 			descriptionArea.setEditable(false);
 			descriptionArea.setWrapStyleWord(true);
 			descriptionArea.setLineWrap(true);
@@ -63,6 +64,8 @@ public record PublicServerInfo(
 				descriptionArea.setForeground(list.getForeground());
 				descriptionArea.setBackground(list.getBackground());
 			}
+
+			panel.revalidate();
 
 			return panel;
 		};

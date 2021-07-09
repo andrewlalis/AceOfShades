@@ -11,8 +11,6 @@ import java.awt.event.MouseEvent;
 import java.io.IOException;
 
 public class SearchServersDialog extends JDialog {
-	private final JButton prevButton;
-	private final JButton nextButton;
 	private final PublicServerListModel listModel;
 
 	public SearchServersDialog(Frame frame, ServerInfoListModel serverInfoListModel) {
@@ -20,9 +18,7 @@ public class SearchServersDialog extends JDialog {
 		this.setTitle("Search for Servers");
 		this.setDefaultCloseOperation(DISPOSE_ON_CLOSE);
 
-		this.prevButton = new JButton("<");
-		this.nextButton = new JButton(">");
-		this.listModel = new PublicServerListModel(prevButton, nextButton);
+		this.listModel = new PublicServerListModel();
 
 		this.setContentPane(this.getContent(serverInfoListModel));
 		this.pack();
@@ -40,13 +36,22 @@ public class SearchServersDialog extends JDialog {
 		panel.add(scrollPane, BorderLayout.CENTER);
 
 		JPanel filtersPanel = new JPanel(new FlowLayout());
-		JTextField searchField = new JTextField(20);
+		JTextField searchField = new JTextField(15);
 		searchField.setToolTipText("Search for a server by name.");
 		filtersPanel.add(searchField);
+		var prevButton = new JButton("<");
+		var nextButton = new JButton(">");
+		var refreshButton = new JButton("Refresh");
 		prevButton.addActionListener(e -> listModel.fetchPage(listModel.getCurrentPage() - 1));
 		filtersPanel.add(prevButton);
 		nextButton.addActionListener(e -> listModel.fetchPage(listModel.getCurrentPage() + 1));
 		filtersPanel.add(nextButton);
+		refreshButton.addActionListener(e -> listModel.fetchPage(listModel.getCurrentPage()));
+		filtersPanel.add(refreshButton);
+		listModel.addListener(model -> {
+			prevButton.setEnabled(!model.isFirstPage());
+			nextButton.setEnabled(!model.isLastPage());
+		});
 
 		panel.add(filtersPanel, BorderLayout.NORTH);
 
