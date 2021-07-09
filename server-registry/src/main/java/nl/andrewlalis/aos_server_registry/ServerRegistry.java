@@ -23,15 +23,7 @@ public class ServerRegistry {
 	public static final ObjectMapper mapper = new ObjectMapper();
 
 	public static void main(String[] args) throws ServletException, IOException {
-		Properties props = new Properties();
-		props.load(ServerRegistry.class.getResourceAsStream("/nl/andrewlalis/aos_server_registry/defaults.properties"));
-		Path settingsPath = Path.of(SETTINGS_FILE);
-		if (Files.exists(settingsPath)) {
-			props.load(Files.newBufferedReader(settingsPath));
-		} else {
-			System.out.println("Using built-in default settings. Create a settings.properties file to configure.");
-		}
-
+		var props = loadProperties();
 		startServer(Integer.parseInt(props.getProperty("port")));
 
 		// Every few minutes, prune all stale servers from the registry.
@@ -48,6 +40,7 @@ public class ServerRegistry {
 	 * @throws ServletException If the server could not be started.
 	 */
 	private static void startServer(int port) throws ServletException {
+		System.out.println("Starting server on port " + port + ".");
 		DeploymentInfo servletBuilder = Servlets.deployment()
 			.setClassLoader(ServerRegistry.class.getClassLoader())
 			.setContextPath("/")
@@ -60,9 +53,26 @@ public class ServerRegistry {
 		manager.deploy();
 		HttpHandler servletHandler = manager.start();
 		Undertow server = Undertow.builder()
-			.addHttpListener(port, "localhost")
+			.addHttpListener(port, "0.0.0.0")
 			.setHandler(servletHandler)
 			.build();
 		server.start();
+	}
+
+	/**
+	 * Loads properties from all necessary locations.
+	 * @return The properties that were loaded.
+	 * @throws IOException If an error occurs while reading properties.
+	 */
+	private static Properties loadProperties() throws IOException {
+		Properties props = new Properties();
+		props.load(ServerRegistry.class.getResourceAsStream("/nl/andrewlalis/aos_server_registry/defaults.properties"));
+		Path settingsPath = Path.of(SETTINGS_FILE);
+		if (Files.exists(settingsPath)) {
+			props.load(Files.newBufferedReader(settingsPath));
+		} else {
+			System.out.println("Using built-in default settings. Create a settings.properties file to configure.");
+		}
+		return props;
 	}
 }

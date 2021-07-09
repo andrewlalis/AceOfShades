@@ -28,6 +28,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 public class PublicServerListModel extends AbstractListModel<PublicServerInfo> {
+	public static final String REGISTRY_URL = "http://37.97.207.39:25566/serverInfo";
+
 	private final List<PublicServerInfo> currentPageItems;
 	private boolean firstPage;
 	private boolean lastPage;
@@ -77,11 +79,10 @@ public class PublicServerListModel extends AbstractListModel<PublicServerInfo> {
 	}
 
 	public void fetchPage(int page, String query, String order, String orderDir) {
-		System.out.println("Fetching...");
 		if (this.pageFetchFuture != null && !this.pageFetchFuture.isDone()) {
 			this.pageFetchFuture.cancel(false);
 		}
-		String uri = "http://localhost:8567/serverInfo?page=" + page + "&size=" + this.pageSize;
+		String uri = REGISTRY_URL + "?page=" + page + "&size=" + this.pageSize;
 		if (query != null && !query.isBlank()) {
 			uri += "&q=" + URLEncoder.encode(query, StandardCharsets.UTF_8);
 		}
@@ -91,6 +92,7 @@ public class PublicServerListModel extends AbstractListModel<PublicServerInfo> {
 		if (orderDir != null && !orderDir.isBlank()) {
 			uri += "&dir=" + URLEncoder.encode(orderDir, StandardCharsets.UTF_8);
 		}
+		System.out.println("Fetching from " + uri);
 		HttpRequest request;
 		try {
 			request = HttpRequest.newBuilder().GET().uri(new URI(uri)).header("Accept", "application/json").build();

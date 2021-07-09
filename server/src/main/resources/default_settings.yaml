@@ -17,7 +17,7 @@ registry-settings:
   # Set this to true to allow other players to see this server and join it.
   discoverable: false
   # The URI which points to the registry server. This is only used if discoverable is true.
-  registry-uri: "http://localhost:8567"
+  registry-uri: "http://37.97.207.39:25566"
   # How often to send status updates to the registry server, in seconds.
   update-interval: 30
   # The name of this server.
