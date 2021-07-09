@@ -22,13 +22,13 @@ public class WorldUpdate {
 	private final List<PlayerUpdate> playerUpdates;
 	private final List<BulletUpdate> bulletUpdates;
 	private final List<TeamUpdate> teamUpdates;
-	private final List<Sound> soundsToPlay;
+	private final List<SoundData> soundsToPlay;
 
 	public WorldUpdate() {
 		this(new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>());
 	}
 
-	private WorldUpdate(List<PlayerUpdate> playerUpdates, List<BulletUpdate> bulletUpdates, List<TeamUpdate> teamUpdates, List<Sound> soundsToPlay) {
+	private WorldUpdate(List<PlayerUpdate> playerUpdates, List<BulletUpdate> bulletUpdates, List<TeamUpdate> teamUpdates, List<SoundData> soundsToPlay) {
 		this.playerUpdates = playerUpdates;
 		this.bulletUpdates = bulletUpdates;
 		this.teamUpdates = teamUpdates;
@@ -54,7 +54,7 @@ public class WorldUpdate {
 		this.teamUpdates.add(new TeamUpdate(team));
 	}
 
-	public void addSound(Sound sound) {
+	public void addSound(SoundData sound) {
 		this.soundsToPlay.add(sound);
 	}
 
@@ -70,7 +70,7 @@ public class WorldUpdate {
 		return teamUpdates;
 	}
 
-	public List<Sound> getSoundsToPlay() {
+	public List<SoundData> getSoundsToPlay() {
 		return soundsToPlay;
 	}
 
@@ -79,7 +79,7 @@ public class WorldUpdate {
 			this.playerUpdates.size() * PlayerUpdate.BYTES +
 			this.bulletUpdates.size() * BulletUpdate.BYTES +
 			this.teamUpdates.size() * TeamUpdate.BYTES +
-			this.soundsToPlay.size() * Sound.BYTES;
+			this.soundsToPlay.size() * SoundData.BYTES;
 		ByteArrayOutputStream out = new ByteArrayOutputStream(size);
 		DataOutputStream dataOut = new DataOutputStream(out);
 		dataOut.writeInt(this.playerUpdates.size());
@@ -123,9 +123,9 @@ public class WorldUpdate {
 			teamUpdates.add(TeamUpdate.read(dataIn));
 		}
 		int sounds = dataIn.readInt();
-		List<Sound> soundsToPlay = new ArrayList<>(sounds);
+		List<SoundData> soundsToPlay = new ArrayList<>(sounds);
 		for (int i = 0; i < sounds; i++) {
-			soundsToPlay.add(Sound.read(dataIn));
+			soundsToPlay.add(SoundData.read(dataIn));
 		}
 		var obj = new WorldUpdate(playerUpdates, bulletUpdates, teamUpdates, soundsToPlay);
 		dataIn.close();

@@ -1,7 +1,7 @@
 package nl.andrewlalis.aos_client.sound;
 
 import nl.andrewlalis.aos_core.model.Player;
-import nl.andrewlalis.aos_core.net.data.Sound;
+import nl.andrewlalis.aos_core.net.data.SoundData;
 
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioInputStream;
@@ -15,7 +15,7 @@ import java.io.InputStream;
  * Simple container object for an in-memory audio clip. The contents of this
  * clip are played using a {@link javax.sound.sampled.SourceDataLine} during
  * runtime.
- * @see SoundManager#play(Sound, Player)
+ * @see SoundManager#play(SoundData, Player)
  */
 public class AudioClip {
 	private final AudioFormat format;

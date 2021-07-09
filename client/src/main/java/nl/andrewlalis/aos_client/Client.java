@@ -89,6 +89,9 @@ public class Client {
 				player.setOrientation(p.getOrientation());
 				player.setVelocity(p.getVelocity());
 				player.setGun(new Gun(this.world.getGunTypes().get(p.getGunTypeName())));
+				if (player.getVelocity().mag() > 0) {
+					this.soundManager.playWalking(player, myPlayer);
+				}
 			}
 		}
 		for (var t : update.getTeamUpdates()) {

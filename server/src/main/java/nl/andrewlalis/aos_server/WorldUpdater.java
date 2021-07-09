@@ -4,7 +4,7 @@ import nl.andrewlalis.aos_core.geom.Vec2;
 import nl.andrewlalis.aos_core.model.*;
 import nl.andrewlalis.aos_core.model.tools.GunCategory;
 import nl.andrewlalis.aos_core.net.chat.SystemChatMessage;
-import nl.andrewlalis.aos_core.net.data.Sound;
+import nl.andrewlalis.aos_core.net.data.SoundData;
 import nl.andrewlalis.aos_core.net.data.SoundType;
 import nl.andrewlalis.aos_core.net.data.WorldUpdate;
 
@@ -198,7 +198,7 @@ public class WorldUpdater extends Thread {
 			} else if (p.getGun().getType().getCategory() == GunCategory.MACHINE) {
 				soundType = ThreadLocalRandom.current().nextFloat() < 0.8f ? SoundType.SHOT_MACHINE_GUN_1 : SoundType.SHOT_MACHINE_GUN_2;
 			}
-			this.worldUpdate.addSound(new Sound(p.getPosition(), 1.0f, soundType));
+			this.worldUpdate.addSound(new SoundData(p.getPosition(), 1.0f, soundType));
 			p.useWeapon();
 			p.setVelocity(p.getVelocity().add(p.getOrientation().mul(-1 * p.getGun().getType().getRecoil())));
 		}
@@ -207,7 +207,7 @@ public class WorldUpdater extends Thread {
 		}
 		if (p.isReloading() && p.isReloadingComplete()) {
 			p.finishReloading();
-			this.worldUpdate.addSound(new Sound(p.getPosition(), 1.0f, SoundType.RELOAD));
+			this.worldUpdate.addSound(new SoundData(p.getPosition(), 1.0f, SoundType.RELOAD));
 		}
 	}
 
@@ -228,7 +228,7 @@ public class WorldUpdater extends Thread {
 					pos.y() > bar.getPosition().y() && pos.y() < bar.getPosition().y() + bar.getSize().y()
 				) {
 					int code = ThreadLocalRandom.current().nextInt(SoundType.BULLET_IMPACT_1.getCode(), SoundType.BULLET_IMPACT_5.getCode() + 1);
-					this.worldUpdate.addSound(new Sound(b.getPosition(), 1.0f, SoundType.get((byte) code)));
+					this.worldUpdate.addSound(new SoundData(b.getPosition(), 1.0f, SoundType.get((byte) code)));
 					bulletsToRemove.add(b);
 					removed = true;
 					break;
@@ -260,7 +260,7 @@ public class WorldUpdater extends Thread {
 					if (p.getHealth() == 0.0f) {
 						Player shooter = this.world.getPlayers().get(b.getPlayerId());
 						this.server.broadcastMessage(new SystemChatMessage(SystemChatMessage.Level.SEVERE, p.getName() + " was shot by " + shooter.getName() + "."));
-						this.worldUpdate.addSound(new Sound(p.getPosition(), 1.0f, SoundType.DEATH));
+						this.worldUpdate.addSound(new SoundData(p.getPosition(), 1.0f, SoundType.DEATH));
 						shooter.incrementKillCount();
 						if (shooter.getTeam() != null) {
 							shooter.getTeam().incrementScore();

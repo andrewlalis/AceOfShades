@@ -20,7 +20,8 @@ public enum SoundType {
 	BULLET_IMPACT_2(7, "bullet_impact_2.wav"),
 	BULLET_IMPACT_3(8, "bullet_impact_3.wav"),
 	BULLET_IMPACT_4(9, "bullet_impact_4.wav"),
-	BULLET_IMPACT_5(10, "bullet_impact_5.wav");
+	BULLET_IMPACT_5(10, "bullet_impact_5.wav"),
+	FOOTSTEPS_1(13, "footsteps1.wav");
 
 	private final byte code;
 	private final String soundName;

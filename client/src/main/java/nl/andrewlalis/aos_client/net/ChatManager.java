@@ -4,7 +4,7 @@ import nl.andrewlalis.aos_client.sound.SoundManager;
 import nl.andrewlalis.aos_core.net.chat.ChatMessage;
 import nl.andrewlalis.aos_core.net.chat.ChatType;
 import nl.andrewlalis.aos_core.net.chat.PlayerChatMessage;
-import nl.andrewlalis.aos_core.net.data.Sound;
+import nl.andrewlalis.aos_core.net.data.SoundData;
 import nl.andrewlalis.aos_core.net.data.SoundType;
 
 import java.util.LinkedList;
@@ -46,7 +46,7 @@ public class ChatManager {
 	public synchronized void addChatMessage(ChatMessage message) {
 		this.chatMessages.add(message);
 		if (message instanceof PlayerChatMessage) {
-			this.soundManager.play(new Sound(null, 1.0f, SoundType.CHAT));
+			this.soundManager.play(new SoundData(null, 1.0f, SoundType.CHAT));
 		}
 		while (this.chatMessages.size() > MAX_CHAT_MESSAGES) {
 			this.chatMessages.remove(0);
