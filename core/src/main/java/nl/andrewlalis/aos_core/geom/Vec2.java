@@ -6,6 +6,9 @@ import java.io.Serializable;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 
+/**
+ * A two-dimensional, floating-point vector consisting of an x- and y-component.
+ */
 public record Vec2(float x, float y) implements Serializable {
 	public static final Vec2 ZERO = new Vec2(0, 0);
 	public static final Vec2 UP = new Vec2(0, -1);

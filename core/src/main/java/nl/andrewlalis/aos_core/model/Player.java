@@ -27,6 +27,7 @@ public class Player extends PhysicsObject implements Comparable<Player> {
 	private transient int deathCount;
 	private transient int shotCount;
 	private transient int resupplyCount;
+	private transient int killStreak;
 
 	public Player(int id, String name, Team team, GunType gunType, float maxHealth) {
 		this.id = id;
@@ -168,12 +169,18 @@ public class Player extends PhysicsObject implements Comparable<Player> {
 		return resupplyCount;
 	}
 
+	public int getKillStreak() {
+		return killStreak;
+	}
+
 	public void incrementDeathCount() {
 		this.deathCount++;
+		this.killStreak = 0;
 	}
 
 	public void incrementKillCount() {
 		this.killCount++;
+		this.killStreak++;
 	}
 
 	public void resetStats() {
