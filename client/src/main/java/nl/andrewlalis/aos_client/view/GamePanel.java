@@ -204,7 +204,7 @@ public class GamePanel extends JPanel {
 	 * @param gun The gun to draw.
 	 */
 	private void drawGun(Graphics2D g2, Gun gun) {
-		g2.setColor(Color.decode(gun.getType().getColor()));
+		g2.setColor(Color.decode(gun.getType().color()));
 		Rectangle2D.Double gunBarrel = new Rectangle2D.Double(
 			0,
 			0.5,
@@ -307,8 +307,8 @@ public class GamePanel extends JPanel {
 			g2.drawString("Reloading...", 5, this.getHeight() - 10);
 		}
 		Gun gun = myPlayer.getGun();
-		g2.drawString("Clips: " + gun.getClipCount() + " / " + gun.getType().getMaxClipCount(), 5, this.getHeight() - 20);
-		g2.drawString("Bullets: " + gun.getCurrentClipBulletCount() + " / " + gun.getType().getClipSize(), 5, this.getHeight() - 30);
+		g2.drawString("Clips: " + gun.getClipCount() + " / " + gun.getType().maxClipCount(), 5, this.getHeight() - 20);
+		g2.drawString("Bullets: " + gun.getCurrentClipBulletCount() + " / " + gun.getType().clipSize(), 5, this.getHeight() - 30);
 		g2.setColor(Color.GREEN);
 		g2.drawString(String.format("Health: %.1f", myPlayer.getHealth()), 5, this.getHeight() - 40);
 

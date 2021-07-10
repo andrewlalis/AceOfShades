@@ -3,7 +3,11 @@ package nl.andrewlalis.aos_core.model;
 import nl.andrewlalis.aos_core.geom.Vec2;
 import nl.andrewlalis.aos_core.model.tools.Gun;
 import nl.andrewlalis.aos_core.model.tools.GunType;
+import nl.andrewlalis.aos_core.model.tools.Tool;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
 
 public class Player extends PhysicsObject implements Comparable<Player> {
@@ -14,13 +18,9 @@ public class Player extends PhysicsObject implements Comparable<Player> {
 	private final String name;
 	private Team team;
 	private PlayerControlState state;
-	private Gun gun;
+	private List<Tool> tools;
+	private Tool selectedTool;
 	private float health;
-
-	private transient long lastShot;
-	private transient long reloadingStartedAt;
-	private boolean reloading;
-	private transient long lastResupply;
 
 	// Stats
 	private transient int killCount;
@@ -29,15 +29,18 @@ public class Player extends PhysicsObject implements Comparable<Player> {
 	private transient int resupplyCount;
 	private transient int killStreak;
 
+	private transient long lastResupply;
+
 	public Player(int id, String name, Team team, GunType gunType, float maxHealth) {
 		this.id = id;
 		this.name = name;
 		this.team = team;
 		this.state = new PlayerControlState();
-		this.gun = new Gun(gunType);
 		this.health = maxHealth;
-		this.useWeapon();
-		this.lastShot = System.currentTimeMillis();
+		this.tools = new ArrayList<>();
+		var gun = new Gun(gunType);
+		this.tools.add(gun);
+		this.selectedTool = gun;
 	}
 
 	public int getId() {
@@ -64,56 +67,23 @@ public class Player extends PhysicsObject implements Comparable<Player> {
 		this.team = team;
 	}
 
-	public Gun getGun() {
-		return gun;
+	public List<Tool> getTools() {
+		return this.tools;
 	}
 
-	public void setGun(Gun gun) {
-		this.gun = gun;
+	public Tool getSelectedTool() {
+		return this.selectedTool;
 	}
 
 	public void setHealth(float health) {
 		this.health = health;
 	}
 
-	public void setReloading(boolean reloading) {
-		this.reloading = reloading;
-	}
-
-	public boolean canUseWeapon() {
+	public boolean canUseGun() {
 		return this.state.isShooting() &&
-			!this.state.isReloading() &&
-			!this.reloading &&
-			this.gun.getCurrentClipBulletCount() > 0 &&
-			this.lastShot + ((long) (this.gun.getType().getShotCooldownTime() * 1000)) < System.currentTimeMillis() &&
+			this.selectedTool instanceof Gun gun && gun.isUsable() &&
 			(this.getTeam() == null || this.getTeam().getSpawnPoint().dist(this.getPosition()) > Team.SPAWN_RADIUS);
 	}
-
-	public void useWeapon() {
-		this.lastShot = System.currentTimeMillis();
-		this.gun.decrementBulletCount();
-		this.shotCount++;
-	}
-
-	public void startReloading() {
-		this.reloading = true;
-		this.reloadingStartedAt = System.currentTimeMillis();
-	}
-
-	public void finishReloading() {
-		this.gun.reload();
-		this.reloading = false;
-	}
-
-	public boolean isReloadingComplete() {
-		long msSinceStart = System.currentTimeMillis() - this.reloadingStartedAt;
-		return msSinceStart > this.gun.getType().getReloadTime() * 1000;
-	}
-
-	public boolean isReloading() {
-		return reloading;
-	}
-
 	public boolean canResupply(float resupplyCooldown) {
 		return this.team != null &&
 			this.team.getSupplyPoint().dist(this.getPosition()) < Team.SUPPLY_POINT_RADIUS &&
@@ -121,9 +91,11 @@ public class Player extends PhysicsObject implements Comparable<Player> {
 	}
 
 	public void resupply(float maxHealth) {
-		this.lastResupply = System.currentTimeMillis();
-		this.gun.refillClips();
+		for (Tool t : this.tools) {
+			t.resupply();
+		}
 		this.health = maxHealth;
+		this.lastResupply = System.currentTimeMillis();
 		this.resupplyCount++;
 	}
 
@@ -137,7 +109,9 @@ public class Player extends PhysicsObject implements Comparable<Player> {
 
 	public void respawn(float maxHealth) {
 		this.resupply(maxHealth);
-		this.gun.emptyCurrentClip();
+		for (Tool t : this.tools) {
+			t.reset();
+		}
 		if (this.team != null) {
 			this.setPosition(this.team.getSpawnPoint().add(Vec2.random(-Team.SPAWN_RADIUS / 2, Team.SPAWN_RADIUS / 2)));
 		}

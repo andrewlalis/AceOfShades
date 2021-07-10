@@ -1,6 +1,5 @@
 package nl.andrewlalis.aos_server.command;
 
-import nl.andrewlalis.aos_core.model.Player;
 import nl.andrewlalis.aos_server.Server;
 
 import java.util.stream.Collectors;
@@ -21,13 +20,12 @@ public class ListPlayersCommand implements Command {
 		String message = this.server.getWorld().getPlayers().values().stream()
 			.sorted()
 			.map(player -> String.format(
-				"%d | %s   Team: %s, Health: %.1f / %.1f, Gun: %s",
+				"%d | %s   Team: %s, Health: %.1f / %.1f",
 				player.getId(),
 				player.getName(),
 				player.getTeam() == null ? "none" : player.getTeam().getName(),
 				player.getHealth(),
-				this.server.getSettings().getPlayerSettings().getMaxHealth(),
-				player.getGun().getType().getName()
+				this.server.getSettings().getPlayerSettings().getMaxHealth()
 			))
 			.collect(Collectors.joining("\n"));
 		System.out.println(message);

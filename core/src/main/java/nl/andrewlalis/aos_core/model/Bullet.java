@@ -7,7 +7,7 @@ import nl.andrewlalis.aos_core.model.tools.Gun;
  * Represents a single projectile bullet fired from a player's gun. When shot by
  * a player, a newly-spawned bullet will be initialized with a velocity in the
  * general direction of the gun, with some perturbation according to the gun's
- * accuracy and player's sprinting/sneaking status.
+ * inaccuracy and player's sprinting/sneaking status.
  */
 public class Bullet extends PhysicsObject {
 	private final int playerId;
@@ -34,14 +34,14 @@ public class Bullet extends PhysicsObject {
 			.add(player.getOrientation().perp().mul(Player.RADIUS))
 		);
 		this.setOrientation(player.getOrientation());
-		float accuracy = player.getGun().getType().getAccuracy();
+		float inaccuracy = player.getGun().getType().inaccuracy();
 		if (player.isSneaking()) {
-			accuracy *= sneakAccuracyModifier;
+			inaccuracy *= sneakAccuracyModifier;
 		} else if (player.isSprinting()) {
-			accuracy *= sprintAccuracyModifier;
+			inaccuracy *= sprintAccuracyModifier;
 		}
-		Vec2 perturbation = Vec2.random(-1, 1).mul(accuracy);
-		Vec2 localVelocity = this.getOrientation().add(perturbation).mul(player.getGun().getType().getBulletSpeed());
+		Vec2 perturbation = Vec2.random(-1, 1).mul(inaccuracy);
+		Vec2 localVelocity = this.getOrientation().add(perturbation).mul(player.getGun().getType().bulletSpeed());
 		this.setVelocity(player.getVelocity().add(localVelocity));
 	}
 

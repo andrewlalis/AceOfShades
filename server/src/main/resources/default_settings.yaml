@@ -52,9 +52,9 @@ player-settings:
   max-health: 100
   # How quickly players regenerate health, in points per second. Set to 0 to disable regeneration.
   health-regen-rate: 1.0
-  # How much sneaking affects gun accuracy. Values less than 0 increase accuracy, and greater than 0 decrease accuracy.
+  # How much sneaking affects gun inaccuracy. Values less than 0 increase inaccuracy, and greater than 0 decrease inaccuracy.
   sneak-accuracy-modifier: 0.5
-  # How much sprinting affects gun accuracy. Values less than 0 increase accuracy, and greater than 0 decrease accuracy.
+  # How much sprinting affects gun inaccuracy. Values less than 0 increase inaccuracy, and greater than 0 decrease inaccuracy.
   sprint-accuracy-modifier: 1.5
   # Should be the name of one of the guns defined in "gun-settings".
   default-gun: M1 Garand
@@ -78,7 +78,7 @@ gun-settings:
     max-clip-count: 4 # The maximum number of clips which a player can hold for this gun.
     clip-size: 30 # The number of rounds in each clip.
     bullets-per-round: 1 # The number of bullets spawned for each round fired.
-    accuracy: 0.10 # The accuracy of the gun, or rather deviation. Increase this to decrease accuracy.
+    inaccuracy: 0.10 # The inaccuracy of the gun, or rather deviation. Increase this to decrease inaccuracy.
     shot-cooldown-time: 0.05 # How many seconds to wait after shooting before you can shoot again.
     reload-time: 1.2 # How many seconds to wait while reloading.
     bullet-speed: 90 # How fast the bullets from this gun fly, in meters per second.
@@ -91,7 +91,7 @@ gun-settings:
     max-clip-count: 5
     clip-size: 16
     bullets-per-round: 1
-    accuracy: 0.20
+    inaccuracy: 0.20
     shot-cooldown-time: 0.25
     reload-time: 1.0
     bullet-speed: 40
@@ -104,7 +104,7 @@ gun-settings:
     max-clip-count: 3
     clip-size: 500
     bullets-per-round: 1
-    accuracy: 0.10
+    inaccuracy: 0.10
     shot-cooldown-time: 0.04
     reload-time: 3
     bullet-speed: 60
@@ -117,7 +117,7 @@ gun-settings:
     max-clip-count: 3
     clip-size: 100
     bullets-per-round: 1
-    accuracy: 0.08
+    inaccuracy: 0.08
     shot-cooldown-time: 0.03
     reload-time: 3.5
     bullet-speed: 80
@@ -130,7 +130,7 @@ gun-settings:
     max-clip-count: 10
     clip-size: 8
     bullets-per-round: 1
-    accuracy: 0.02
+    inaccuracy: 0.02
     shot-cooldown-time: 0.75
     reload-time: 0.75
     bullet-speed: 150
@@ -143,7 +143,7 @@ gun-settings:
     max-clip-count: 8
     clip-size: 6
     bullets-per-round: 5
-    accuracy: 0.15
+    inaccuracy: 0.15
     shot-cooldown-time: 0.5
     reload-time: 2.0
     bullet-speed: 75

@@ -2,6 +2,11 @@ package nl.andrewlalis.aos_core.net.data;
 
 import nl.andrewlalis.aos_core.geom.Vec2;
 import nl.andrewlalis.aos_core.model.Player;
+import nl.andrewlalis.aos_core.model.tools.Grenade;
+import nl.andrewlalis.aos_core.model.tools.Gun;
+import nl.andrewlalis.aos_core.net.data.tool.GrenadeData;
+import nl.andrewlalis.aos_core.net.data.tool.GunData;
+import nl.andrewlalis.aos_core.net.data.tool.ToolData;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -18,22 +23,28 @@ public class PlayerUpdate {
 	private final Vec2 position;
 	private final Vec2 orientation;
 	private final Vec2 velocity;
-	private final String gunTypeName;
+	private final ToolData selectedTool;
 
 	public PlayerUpdate(Player player) {
 		this.id = player.getId();
 		this.position = player.getPosition();
 		this.orientation = player.getOrientation();
 		this.velocity = player.getVelocity();
-		this.gunTypeName = player.getGun().getType().getName();
+		if (player.getSelectedTool() instanceof Gun gun) {
+			this.selectedTool = new GunData(gun);
+		} else if (player.getSelectedTool() instanceof Grenade grenade) {
+			this.selectedTool = new GrenadeData(grenade);
+		} else {
+			throw new IllegalArgumentException("Invalid selected tool.");
+		}
 	}
 
-	public PlayerUpdate(int id, Vec2 position, Vec2 orientation, Vec2 velocity, String gunTypeName) {
+	public PlayerUpdate(int id, Vec2 position, Vec2 orientation, Vec2 velocity) {
 		this.id = id;
 		this.position = position;
 		this.orientation = orientation;
 		this.velocity = velocity;
-		this.gunTypeName = gunTypeName;
+		this.selectedTool = null;
 	}
 
 	public int getId() {
@@ -52,10 +63,6 @@ public class PlayerUpdate {
 		return velocity;
 	}
 
-	public String getGunTypeName() {
-		return gunTypeName;
-	}
-
 	public void write(DataOutputStream out) throws IOException {
 		out.writeInt(this.id);
 		out.writeFloat(this.position.x());
@@ -64,8 +71,6 @@ public class PlayerUpdate {
 		out.writeFloat(this.orientation.y());
 		out.writeFloat(this.velocity.x());
 		out.writeFloat(this.velocity.y());
-		out.writeInt(this.gunTypeName.length());
-		out.writeBytes(this.gunTypeName);
 	}
 
 	public static PlayerUpdate read(DataInputStream in) throws IOException {
@@ -73,8 +78,6 @@ public class PlayerUpdate {
 		Vec2 position = Vec2.read(in);
 		Vec2 orientation = Vec2.read(in);
 		Vec2 velocity = Vec2.read(in);
-		int gunTypeNameLength = in.readInt();
-		String gunTypeName = new String(in.readNBytes(gunTypeNameLength));
 		return new PlayerUpdate(id, position, orientation, velocity, gunTypeName);
 	}
 }

@@ -184,23 +184,23 @@ public class WorldUpdater extends Thread {
 	}
 
 	private void updatePlayerShooting(Player p) {
-		if (p.canUseWeapon()) {
-			for (int i = 0; i < p.getGun().getType().getBulletsPerRound(); i++) {
+		if (p.canUseGun()) {
+			for (int i = 0; i < p.getGun().getType().bulletsPerRound(); i++) {
 				Bullet b = new Bullet(p, server.getSettings().getPlayerSettings().getSneakAccuracyModifier(), server.getSettings().getPlayerSettings().getSprintAccuracyModifier());
 				this.world.getBullets().add(b);
 				this.worldUpdate.addBullet(b);
 			}
 			SoundType soundType = SoundType.SHOT_SMG;
-			if (p.getGun().getType().getCategory() == GunCategory.RIFLE) {
+			if (p.getGun().getType().category() == GunCategory.RIFLE) {
 				soundType = SoundType.SHOT_RIFLE;
-			} else if (p.getGun().getType().getCategory() == GunCategory.SHOTGUN) {
+			} else if (p.getGun().getType().category() == GunCategory.SHOTGUN) {
 				soundType = SoundType.SHOT_SHOTGUN;
-			} else if (p.getGun().getType().getCategory() == GunCategory.MACHINE) {
+			} else if (p.getGun().getType().category() == GunCategory.MACHINE) {
 				soundType = ThreadLocalRandom.current().nextFloat() < 0.8f ? SoundType.SHOT_MACHINE_GUN_1 : SoundType.SHOT_MACHINE_GUN_2;
 			}
 			this.worldUpdate.addSound(new SoundData(p.getPosition(), 1.0f, soundType));
 			p.useWeapon();
-			p.setVelocity(p.getVelocity().add(p.getOrientation().mul(-1 * p.getGun().getType().getRecoil())));
+			p.setVelocity(p.getVelocity().add(p.getOrientation().mul(-1 * p.getGun().getType().recoil())));
 		}
 		if (p.getState().isReloading() && !p.isReloading() && p.getGun().canReload()) {
 			p.startReloading();
@@ -255,7 +255,7 @@ public class WorldUpdater extends Thread {
 				if (dist < Player.RADIUS && (p.getTeam() == null || p.getTeam().getSpawnPoint().dist(p.getPosition()) > Team.SPAWN_RADIUS)) {
 
 					// Player was shot!
-					float damage = (float) (((Player.RADIUS - dist) / Player.RADIUS) * b.getGun().getType().getBaseDamage());
+					float damage = (float) (((Player.RADIUS - dist) / Player.RADIUS) * b.getGun().getType().baseDamage());
 					p.takeDamage(damage);
 					if (p.getHealth() == 0.0f) {
 						Player shooter = this.world.getPlayers().get(b.getPlayerId());

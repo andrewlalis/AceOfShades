@@ -18,7 +18,7 @@ public class GunCommand implements ChatCommand {
 		String gunName = String.join(" ", args);
 		GunType gunType = null;
 		for (GunType type : handler.getServer().getWorld().getGunTypes().values()) {
-			if (type.getName().equalsIgnoreCase(gunName)) {
+			if (type.name().equalsIgnoreCase(gunName)) {
 				gunType = type;
 				break;
 			}
@@ -28,6 +28,6 @@ public class GunCommand implements ChatCommand {
 			return;
 		}
 		player.setGun(new Gun(gunType));
-		handler.send(new SystemChatMessage(SystemChatMessage.Level.INFO, "Changed gun to " + player.getGun().getType().getName() + "."));
+		handler.send(new SystemChatMessage(SystemChatMessage.Level.INFO, "Changed gun to " + player.getGun().getType().name() + "."));
 	}
 }

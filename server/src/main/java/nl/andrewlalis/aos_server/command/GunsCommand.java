@@ -19,13 +19,13 @@ public class GunsCommand implements Command, ChatCommand {
 	@Override
 	public void execute(String[] args) {
 		for (var gunType : this.server.getWorld().getGunTypes().values()) {
-			System.out.println(gunType.getName());
+			System.out.println(gunType.name());
 		}
 	}
 
 	@Override
 	public void execute(ClientHandler handler, Player player, String[] args) {
-		String msg = handler.getServer().getWorld().getGunTypes().values().stream().map(GunType::getName).collect(Collectors.joining(", "));
+		String msg = handler.getServer().getWorld().getGunTypes().values().stream().map(GunType::name).collect(Collectors.joining(", "));
 		handler.send(new SystemChatMessage(SystemChatMessage.Level.INFO, msg));
 	}
 }

@@ -10,9 +10,13 @@ import nl.andrewlalis.aos_core.model.Player;
 import nl.andrewlalis.aos_core.model.Team;
 import nl.andrewlalis.aos_core.model.World;
 import nl.andrewlalis.aos_core.model.tools.Gun;
+import nl.andrewlalis.aos_core.model.tools.GunType;
+import nl.andrewlalis.aos_core.model.tools.Tool;
 import nl.andrewlalis.aos_core.net.data.DataTypes;
 import nl.andrewlalis.aos_core.net.data.PlayerDetailUpdate;
 import nl.andrewlalis.aos_core.net.data.WorldUpdate;
+import nl.andrewlalis.aos_core.net.data.tool.GunData;
+import nl.andrewlalis.aos_core.net.data.tool.ToolData;
 
 import java.io.IOException;
 
@@ -23,7 +27,6 @@ public class Client {
 	private final MessageTransceiver messageTransceiver;
 
 	private World world;
-	private Player myPlayer;
 
 	private final GameRenderer renderer;
 	private final SoundManager soundManager;
@@ -123,8 +126,6 @@ public class Client {
 	public void updatePlayer(PlayerDetailUpdate update) {
 		if (this.myPlayer == null) return;
 		this.myPlayer.setHealth(update.getHealth());
-		this.myPlayer.setReloading(update.isReloading());
-		this.myPlayer.setGun(new Gun(this.myPlayer.getGun().getType(), update.getGunCurrentClipBulletCount(), update.getGunClipCount()));
 	}
 
 	/**
