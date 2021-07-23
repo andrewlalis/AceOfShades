@@ -75,12 +75,7 @@ public class WorldUpdate {
 	}
 
 	public byte[] toBytes() throws IOException {
-		int size = 3 * Integer.BYTES + // List size integers.
-			this.playerUpdates.size() * PlayerUpdate.BYTES +
-			this.bulletUpdates.size() * BulletUpdate.BYTES +
-			this.teamUpdates.size() * TeamUpdate.BYTES +
-			this.soundsToPlay.size() * SoundData.BYTES;
-		ByteArrayOutputStream out = new ByteArrayOutputStream(size);
+		ByteArrayOutputStream out = new ByteArrayOutputStream(1024);
 		DataOutputStream dataOut = new DataOutputStream(out);
 		dataOut.writeInt(this.playerUpdates.size());
 		for (var u : this.playerUpdates) {

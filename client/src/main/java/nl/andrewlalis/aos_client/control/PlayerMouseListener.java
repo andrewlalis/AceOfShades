@@ -8,6 +8,15 @@ import javax.swing.event.MouseInputAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
 
+/**
+ * Listens for changes to the player's mouse state. This handles the following
+ * possible control events:
+ * <ul>
+ *     <li>Pressing the mouse to use the player's weapon.</li>
+ *     <li>Scrolling the mouse wheel to zoom in or out.</li>
+ *     <li>Moving the mouse to change the player's orientation.</li>
+ * </ul>
+ */
 public class PlayerMouseListener extends MouseInputAdapter {
 	private static final float MOUSE_UPDATES_PER_SECOND = 60.0f;
 	private static final long MS_PER_MOUSE_UPDATE = (long) (1000.0f / MOUSE_UPDATES_PER_SECOND);
@@ -25,16 +34,16 @@ public class PlayerMouseListener extends MouseInputAdapter {
 	@Override
 	public void mousePressed(MouseEvent e) {
 		if (e.getButton() == MouseEvent.BUTTON1) {
-			client.getPlayer().getState().setShooting(true);
-			client.sendPlayerState();
+			client.getPlayer().getState().setUsingTool(true);
+			client.sendControlState();
 		}
 	}
 
 	@Override
 	public void mouseReleased(MouseEvent e) {
 		if (e.getButton() == MouseEvent.BUTTON1) {
-			client.getPlayer().getState().setShooting(false);
-			client.sendPlayerState();
+			client.getPlayer().getState().setUsingTool(false);
+			client.sendControlState();
 		}
 	}
 
@@ -54,7 +63,7 @@ public class PlayerMouseListener extends MouseInputAdapter {
 		client.getPlayer().getState().setMouseLocation(centeredMouseLocation);
 		long now = System.currentTimeMillis();
 		if (now - this.lastMouseMove > MS_PER_MOUSE_UPDATE) {
-			client.sendPlayerState();
+			client.sendControlState();
 			this.lastMouseMove = now;
 		}
 	}
@@ -64,10 +73,10 @@ public class PlayerMouseListener extends MouseInputAdapter {
 		Vec2 c = new Vec2(this.gamePanel.getWidth() / 2.0f, this.gamePanel.getHeight() / 2.0f);
 		Vec2 centeredMouseLocation = new Vec2(e.getX(), e.getY()).sub(c);
 		client.getPlayer().getState().setMouseLocation(centeredMouseLocation);
-		client.getPlayer().getState().setShooting(true);
+		client.getPlayer().getState().setUsingTool(true);
 		long now = System.currentTimeMillis();
 		if (now - this.lastMouseMove > MS_PER_MOUSE_UPDATE) {
-			client.sendPlayerState();
+			client.sendControlState();
 			this.lastMouseMove = now;
 		}
 	}

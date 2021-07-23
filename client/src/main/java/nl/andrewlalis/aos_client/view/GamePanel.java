@@ -1,8 +1,9 @@
 package nl.andrewlalis.aos_client.view;
 
-import nl.andrewlalis.aos_client.net.ChatManager;
 import nl.andrewlalis.aos_client.Client;
+import nl.andrewlalis.aos_client.net.ChatManager;
 import nl.andrewlalis.aos_core.model.*;
+import nl.andrewlalis.aos_core.model.tools.Grenade;
 import nl.andrewlalis.aos_core.model.tools.Gun;
 import nl.andrewlalis.aos_core.net.chat.ChatMessage;
 import nl.andrewlalis.aos_core.net.chat.ChatType;
@@ -84,7 +85,7 @@ public class GamePanel extends JPanel {
 	 * @param world The world to render.
 	 */
 	private void drawWorld(Graphics2D g2, World world) {
-		Player myPlayer = client.getPlayer();
+		Player myPlayer = this.client.getPlayer();
 		if (myPlayer == null) return;
 		double scale = this.scales[this.scaleIndex];
 		AffineTransform pre = g2.getTransform();
@@ -193,7 +194,9 @@ public class GamePanel extends JPanel {
 			Color playerColor = p.getTeam() != null ? p.getTeam().getColor() : Color.BLACK;
 			g2.setColor(playerColor);
 			g2.fill(dot);
-			this.drawGun(g2, p.getGun());
+			if (p.getSelectedTool() instanceof Gun gun) {
+				this.drawGun(g2, gun);
+			}
 			g2.setTransform(pre);
 		}
 	}
@@ -302,21 +305,35 @@ public class GamePanel extends JPanel {
 		Player myPlayer = this.client.getPlayer();
 		if (myPlayer == null) return;
 
+		int lineHeight = this.getHeight() - 10;
 		g2.setColor(Color.WHITE);
-		if (myPlayer.isReloading()) {
-			g2.drawString("Reloading...", 5, this.getHeight() - 10);
+		if (myPlayer.getSelectedTool() != null) {
+			g2.drawString(myPlayer.getSelectedTool().getName(), 5, lineHeight);
+			lineHeight -= 10;
 		}
-		Gun gun = myPlayer.getGun();
-		g2.drawString("Clips: " + gun.getClipCount() + " / " + gun.getType().maxClipCount(), 5, this.getHeight() - 20);
-		g2.drawString("Bullets: " + gun.getCurrentClipBulletCount() + " / " + gun.getType().clipSize(), 5, this.getHeight() - 30);
-		g2.setColor(Color.GREEN);
-		g2.drawString(String.format("Health: %.1f", myPlayer.getHealth()), 5, this.getHeight() - 40);
 
-		int y = this.getHeight() - 60;
+		if (myPlayer.getSelectedTool() instanceof Gun gun) {
+			if (gun.isReloading()) {
+				g2.drawString("Reloading...", 5, lineHeight);
+				lineHeight -= 10;
+			}
+			g2.drawString("Clips: " + gun.getClipCount() + " / " + gun.getType().maxClipCount(), 5, lineHeight);
+			lineHeight -= 10;
+			g2.drawString("Bullets: " + gun.getCurrentClipBulletCount() + " / " + gun.getType().clipSize(), 5, lineHeight);
+			lineHeight -= 10;
+		} else if (myPlayer.getSelectedTool() instanceof Grenade grenade) {
+			g2.drawString(grenade.getGrenadesRemaining() + " / " + grenade.getMaxGrenades() + " grenades", 5, lineHeight);
+			lineHeight -= 10;
+		}
+
+		g2.setColor(Color.GREEN);
+		g2.drawString(String.format("Health: %.1f", myPlayer.getHealth()), 5, lineHeight);
+		lineHeight -= 10;
+
 		for (Team t : world.getTeams().values()) {
 			g2.setColor(t.getColor());
-			g2.drawString("Team " + t.getName() + ": " + t.getScore(), 5, y);
-			y -= 15;
+			g2.drawString("Team " + t.getName() + ": " + t.getScore(), 5, lineHeight);
+			lineHeight -= 15;
 		}
 	}
 }

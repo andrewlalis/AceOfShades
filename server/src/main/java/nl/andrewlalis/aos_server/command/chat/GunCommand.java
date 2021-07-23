@@ -6,8 +6,6 @@ import nl.andrewlalis.aos_core.model.tools.GunType;
 import nl.andrewlalis.aos_core.net.chat.SystemChatMessage;
 import nl.andrewlalis.aos_server.ClientHandler;
 
-import java.util.Locale;
-
 public class GunCommand implements ChatCommand {
 	@Override
 	public void execute(ClientHandler handler, Player player, String[] args) {
@@ -27,7 +25,16 @@ public class GunCommand implements ChatCommand {
 			handler.send(new SystemChatMessage(SystemChatMessage.Level.WARNING, "Unknown gun name. Use /guns to see available guns."));
 			return;
 		}
-		player.setGun(new Gun(gunType));
-		handler.send(new SystemChatMessage(SystemChatMessage.Level.INFO, "Changed gun to " + player.getGun().getType().name() + "."));
+		boolean gunSet = false;
+		for (int i = 0; i < player.getTools().size(); i++) {
+			if (player.getTools().get(i) instanceof Gun) {
+				player.getTools().set(i, new Gun(gunType));
+				gunSet = true;
+			}
+		}
+		if (!gunSet) {
+			player.getTools().add(new Gun(gunType));
+		}
+		handler.send(new SystemChatMessage(SystemChatMessage.Level.INFO, "Changed gun to " + gunType.name() + "."));
 	}
 }

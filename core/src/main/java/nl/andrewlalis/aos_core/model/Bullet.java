@@ -14,10 +14,10 @@ public class Bullet extends PhysicsObject {
 	private final Player player;
 	private final Gun gun;
 
-	public Bullet(Player player, float sneakAccuracyModifier, float sprintAccuracyModifier) {
+	public Bullet(Player player, Gun gun, float sneakAccuracyModifier, float sprintAccuracyModifier) {
 		this.playerId = player.getId();
 		this.player = player;
-		this.gun = player.getGun();
+		this.gun = gun;
 		this.setPhysicsProperties(sneakAccuracyModifier, sprintAccuracyModifier);
 	}
 
@@ -34,14 +34,14 @@ public class Bullet extends PhysicsObject {
 			.add(player.getOrientation().perp().mul(Player.RADIUS))
 		);
 		this.setOrientation(player.getOrientation());
-		float inaccuracy = player.getGun().getType().inaccuracy();
+		float inaccuracy = this.gun.getType().inaccuracy();
 		if (player.isSneaking()) {
 			inaccuracy *= sneakAccuracyModifier;
 		} else if (player.isSprinting()) {
 			inaccuracy *= sprintAccuracyModifier;
 		}
 		Vec2 perturbation = Vec2.random(-1, 1).mul(inaccuracy);
-		Vec2 localVelocity = this.getOrientation().add(perturbation).mul(player.getGun().getType().bulletSpeed());
+		Vec2 localVelocity = this.getOrientation().add(perturbation).mul(this.gun.getType().bulletSpeed());
 		this.setVelocity(player.getVelocity().add(localVelocity));
 	}
 

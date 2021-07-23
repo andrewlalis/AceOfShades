@@ -1,10 +1,13 @@
 package nl.andrewlalis.aos_core.net.data.tool;
 
+import nl.andrewlalis.aos_core.model.World;
 import nl.andrewlalis.aos_core.model.tools.Gun;
+import nl.andrewlalis.aos_core.model.tools.Tool;
 
 import java.nio.ByteBuffer;
 
 public class GunData extends ToolData {
+	private byte typeId;
 	private boolean reloading;
 	private int clipCount;
 	private int currentClipBulletCount;
@@ -18,12 +21,17 @@ public class GunData extends ToolData {
 
 	public GunData(Gun gun) {
 		this();
+		this.typeId = gun.getType().id();
 		this.reloading = gun.isReloading();
 		this.clipCount = gun.getClipCount();
 		this.currentClipBulletCount = gun.getCurrentClipBulletCount();
 		this.bulletsPerRound = gun.getType().bulletsPerRound();
 		this.clipSize = gun.getType().clipSize();
 		this.maxClipCount = gun.getType().maxClipCount();
+	}
+
+	public byte getTypeId() {
+		return typeId;
 	}
 
 	public boolean isReloading() {
@@ -52,11 +60,12 @@ public class GunData extends ToolData {
 
 	@Override
 	public int getByteSize() {
-		return 1 + 5 * Integer.BYTES;
+		return 2 * Byte.BYTES + 5 * Integer.BYTES;
 	}
 
 	@Override
 	protected void putData(ByteBuffer buffer) {
+		buffer.put(this.getTypeId());
 		buffer.put((byte) (this.reloading ? 1 : 0));
 		buffer.putInt(this.clipCount);
 		buffer.putInt(this.currentClipBulletCount);
@@ -67,11 +76,17 @@ public class GunData extends ToolData {
 
 	@Override
 	protected void getData(ByteBuffer buffer) {
+		this.typeId = buffer.get();
 		this.reloading = buffer.get() == 1;
 		this.clipCount = buffer.getInt();
 		this.currentClipBulletCount = buffer.getInt();
 		this.bulletsPerRound = buffer.getInt();
 		this.clipSize = buffer.getInt();
 		this.maxClipCount = buffer.getInt();
+	}
+
+	@Override
+	public Tool toTool(World world) {
+		return new Gun(world.getGunTypeById(this.getTypeId()), this.currentClipBulletCount, this.clipCount, this.reloading);
 	}
 }

@@ -1,6 +1,8 @@
 package nl.andrewlalis.aos_core.net.data.tool;
 
+import nl.andrewlalis.aos_core.model.World;
 import nl.andrewlalis.aos_core.model.tools.Grenade;
+import nl.andrewlalis.aos_core.model.tools.Tool;
 
 import java.nio.ByteBuffer;
 
@@ -18,6 +20,14 @@ public class GrenadeData extends ToolData {
 		this.maxGrenades = grenade.getMaxGrenades();
 	}
 
+	public int getGrenades() {
+		return grenades;
+	}
+
+	public int getMaxGrenades() {
+		return maxGrenades;
+	}
+
 	@Override
 	public int getByteSize() {
 		return 2 * Integer.BYTES;
@@ -33,5 +43,10 @@ public class GrenadeData extends ToolData {
 	protected void getData(ByteBuffer buffer) {
 		this.grenades = buffer.getInt();
 		this.maxGrenades = buffer.getInt();
+	}
+
+	@Override
+	public Tool toTool(World world) {
+		return new Grenade(this.grenades, this.maxGrenades);
 	}
 }

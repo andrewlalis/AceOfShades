@@ -2,45 +2,38 @@ package nl.andrewlalis.aos_core.model;
 
 import nl.andrewlalis.aos_core.geom.Vec2;
 import nl.andrewlalis.aos_core.model.tools.Gun;
-import nl.andrewlalis.aos_core.model.tools.GunType;
+import nl.andrewlalis.aos_core.model.tools.Knife;
 import nl.andrewlalis.aos_core.model.tools.Tool;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public class Player extends PhysicsObject implements Comparable<Player> {
 	public static final float MOVEMENT_THRESHOLD = 0.001f; // Threshold for stopping movement. Speeds slower than this are reduced to 0.
 	public static final float RADIUS = 0.5f; // Collision radius, in meters.
+	public static final float TOOL_CHANGE_TIME = 0.5f; // Cooldown when swapping weapons, in seconds.
 
 	private final int id;
 	private final String name;
 	private Team team;
 	private PlayerControlState state;
-	private List<Tool> tools;
-	private Tool selectedTool;
+	private final List<Tool> tools;
+	private int selectedToolIndex;
 	private float health;
 
-	// Stats
-	private transient int killCount;
-	private transient int deathCount;
-	private transient int shotCount;
-	private transient int resupplyCount;
-	private transient int killStreak;
-
 	private transient long lastResupply;
+	private transient long lastToolChange;
 
-	public Player(int id, String name, Team team, GunType gunType, float maxHealth) {
+	public Player(int id, String name, Team team, float maxHealth) {
 		this.id = id;
 		this.name = name;
 		this.team = team;
 		this.state = new PlayerControlState();
 		this.health = maxHealth;
-		this.tools = new ArrayList<>();
-		var gun = new Gun(gunType);
-		this.tools.add(gun);
-		this.selectedTool = gun;
+		this.tools = new CopyOnWriteArrayList<>();
+		this.tools.add(new Knife());
+		this.selectedToolIndex = 0;
 	}
 
 	public int getId() {
@@ -72,7 +65,30 @@ public class Player extends PhysicsObject implements Comparable<Player> {
 	}
 
 	public Tool getSelectedTool() {
-		return this.selectedTool;
+		if (this.tools.isEmpty()) return null;
+		return this.tools.get(this.selectedToolIndex);
+	}
+
+	public boolean canChangeSelectedTool() {
+		return System.currentTimeMillis() - this.lastToolChange > TOOL_CHANGE_TIME * 1000;
+	}
+
+	public void setSelectedToolIndex(int index) {
+		if (index > this.tools.size() - 1) {
+			index = 0;
+		} else if (index < 0) {
+			index = this.tools.size() - 1;
+		}
+		this.selectedToolIndex = index;
+		this.lastToolChange = System.currentTimeMillis();
+	}
+
+	public void selectNextTool() {
+		this.setSelectedToolIndex(this.selectedToolIndex + 1);
+	}
+
+	public void selectPreviousTool() {
+		this.setSelectedToolIndex(this.selectedToolIndex - 1);
 	}
 
 	public void setHealth(float health) {
@@ -80,10 +96,11 @@ public class Player extends PhysicsObject implements Comparable<Player> {
 	}
 
 	public boolean canUseGun() {
-		return this.state.isShooting() &&
-			this.selectedTool instanceof Gun gun && gun.isUsable() &&
+		return this.state.isUsingTool() &&
+			this.getSelectedTool() instanceof Gun gun && gun.isUsable() &&
 			(this.getTeam() == null || this.getTeam().getSpawnPoint().dist(this.getPosition()) > Team.SPAWN_RADIUS);
 	}
+
 	public boolean canResupply(float resupplyCooldown) {
 		return this.team != null &&
 			this.team.getSupplyPoint().dist(this.getPosition()) < Team.SUPPLY_POINT_RADIUS &&
@@ -96,7 +113,6 @@ public class Player extends PhysicsObject implements Comparable<Player> {
 		}
 		this.health = maxHealth;
 		this.lastResupply = System.currentTimeMillis();
-		this.resupplyCount++;
 	}
 
 	public float getHealth() {
@@ -125,43 +141,6 @@ public class Player extends PhysicsObject implements Comparable<Player> {
 	public boolean isSprinting() {
 		return this.state.isSprinting() &&
 			!this.state.isSneaking();
-	}
-
-	public int getKillCount() {
-		return killCount;
-	}
-
-	public int getDeathCount() {
-		return deathCount;
-	}
-
-	public int getShotCount() {
-		return shotCount;
-	}
-
-	public int getResupplyCount() {
-		return resupplyCount;
-	}
-
-	public int getKillStreak() {
-		return killStreak;
-	}
-
-	public void incrementDeathCount() {
-		this.deathCount++;
-		this.killStreak = 0;
-	}
-
-	public void incrementKillCount() {
-		this.killCount++;
-		this.killStreak++;
-	}
-
-	public void resetStats() {
-		this.killCount = 0;
-		this.deathCount = 0;
-		this.shotCount = 0;
-		this.resupplyCount = 0;
 	}
 
 	@Override

@@ -1,9 +1,12 @@
 package nl.andrewlalis.aos_core.model.tools;
 
+import java.io.Serializable;
+
 /**
  * Information about a particular type of gun.
  */
-public record GunType(
+public record GunType (
+		byte id,
 		String name,
 		GunCategory category,
 		String color,
@@ -16,4 +19,4 @@ public record GunType(
 		float bulletSpeed,
 		float baseDamage,
 		float recoil
-) {}
+) implements Serializable {}

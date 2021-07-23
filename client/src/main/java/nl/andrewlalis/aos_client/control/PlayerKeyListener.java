@@ -28,7 +28,7 @@ public class PlayerKeyListener extends KeyAdapter {
 				s.setReloading(false);
 				s.setSneaking(false);
 				s.setSprinting(false);
-				this.client.sendPlayerState();
+				this.client.sendControlState();
 				if (e.getKeyChar() == '/') this.chatManager.appendToChat('/');
 			}
 		} else if (this.chatManager.isChatting()) {
@@ -63,8 +63,12 @@ public class PlayerKeyListener extends KeyAdapter {
 			state.setSprinting(true);
 		} else if (e.getKeyCode() == KeyEvent.VK_CONTROL) {
 			state.setSneaking(true);
+		} else if (e.getKeyCode() == KeyEvent.VK_Q) {
+			state.setSelectingPreviousTool(true);
+		} else if (e.getKeyCode() == KeyEvent.VK_E) {
+			state.setSelectingNextTool(true);
 		}
-		this.client.sendPlayerState();
+		this.client.sendControlState();
 	}
 
 	@Override
@@ -85,7 +89,11 @@ public class PlayerKeyListener extends KeyAdapter {
 			state.setSprinting(false);
 		} else if (e.getKeyCode() == KeyEvent.VK_CONTROL) {
 			state.setSneaking(false);
+		} else if (e.getKeyCode() == KeyEvent.VK_Q) {
+			state.setSelectingPreviousTool(false);
+		} else if (e.getKeyCode() == KeyEvent.VK_E) {
+			state.setSelectingNextTool(false);
 		}
-		this.client.sendPlayerState();
+		this.client.sendControlState();
 	}
 }

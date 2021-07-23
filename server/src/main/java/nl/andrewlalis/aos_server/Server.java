@@ -1,7 +1,12 @@
 package nl.andrewlalis.aos_server;
 
 import nl.andrewlalis.aos_core.geom.Vec2;
-import nl.andrewlalis.aos_core.model.*;
+import nl.andrewlalis.aos_core.model.Barricade;
+import nl.andrewlalis.aos_core.model.Player;
+import nl.andrewlalis.aos_core.model.Team;
+import nl.andrewlalis.aos_core.model.World;
+import nl.andrewlalis.aos_core.model.tools.Grenade;
+import nl.andrewlalis.aos_core.model.tools.Gun;
 import nl.andrewlalis.aos_core.model.tools.GunCategory;
 import nl.andrewlalis.aos_core.model.tools.GunType;
 import nl.andrewlalis.aos_core.net.Message;
@@ -9,6 +14,7 @@ import nl.andrewlalis.aos_core.net.PlayerUpdateMessage;
 import nl.andrewlalis.aos_core.net.Type;
 import nl.andrewlalis.aos_core.net.chat.SystemChatMessage;
 import nl.andrewlalis.aos_core.net.data.DataTypes;
+import nl.andrewlalis.aos_core.model.PlayerControlState;
 import nl.andrewlalis.aos_core.net.data.PlayerDetailUpdate;
 import nl.andrewlalis.aos_core.net.data.WorldUpdate;
 import nl.andrewlalis.aos_core.util.ByteUtils;
@@ -59,8 +65,10 @@ public class Server {
 	}
 
 	private void initWorld() {
+		byte gunTypeId = 0;
 		for (var gs : this.settings.getGunSettings()) {
 			this.world.getGunTypes().put(gs.getName(), new GunType(
+				gunTypeId++,
 				gs.getName(),
 				GunCategory.valueOf(gs.getCategory().toUpperCase()),
 				gs.getColor(),
@@ -136,7 +144,9 @@ public class Server {
 				team = t;
 			}
 		}
-		Player p = new Player(id, name, team, this.world.getGunTypes().get(this.settings.getPlayerSettings().getDefaultGun()), settings.getPlayerSettings().getMaxHealth());
+		Player p = new Player(id, name, team, settings.getPlayerSettings().getMaxHealth());
+		p.getTools().add(new Gun(this.world.getGunTypes().get(this.settings.getPlayerSettings().getDefaultGun())));
+		p.getTools().add(new Grenade(3, 3));
 		this.world.getPlayers().put(p.getId(), p);
 		String message = p.getName() + " connected.";
 		this.broadcastMessage(new SystemChatMessage(SystemChatMessage.Level.INFO, message));
@@ -204,7 +214,6 @@ public class Server {
 		for (Team t : this.world.getTeams().values()) {
 			t.resetScore();
 			for (Player p : t.getPlayers()) {
-				p.resetStats();
 				p.respawn(settings.getPlayerSettings().getMaxHealth());
 			}
 		}

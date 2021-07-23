@@ -43,6 +43,13 @@ public class World implements Serializable {
 		return gunTypes;
 	}
 
+	public GunType getGunTypeById(byte id) {
+		for (var t : this.gunTypes.values()) {
+			if (t.id() == id) return t;
+		}
+		return null;
+	}
+
 	public Map<Integer, Player> getPlayers() {
 		return this.players;
 	}

@@ -1,5 +1,8 @@
 package nl.andrewlalis.aos_core.net.data.tool;
 
+import nl.andrewlalis.aos_core.model.World;
+import nl.andrewlalis.aos_core.model.tools.Tool;
+
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
@@ -9,6 +12,7 @@ public abstract class ToolData {
 	static {
 		dataMapping.put((byte) 0, GunData.class);
 		dataMapping.put((byte) 1, GrenadeData.class);
+		dataMapping.put((byte) 2, KnifeData.class);
 	}
 
 	private final byte toolType;
@@ -52,4 +56,11 @@ public abstract class ToolData {
 	 * @param buffer The byte buffer to read data from.
 	 */
 	protected abstract void getData(ByteBuffer buffer);
+
+	/**
+	 * Converts this data back into a Tool instance.
+	 * @param world The world in which the tool is being used.
+	 * @return The tool that this data represents.
+	 */
+	public abstract Tool toTool(World world);
 }

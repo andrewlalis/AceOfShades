@@ -4,21 +4,22 @@ import nl.andrewlalis.aos_core.geom.Vec2;
 import nl.andrewlalis.aos_core.model.Player;
 import nl.andrewlalis.aos_core.model.tools.Grenade;
 import nl.andrewlalis.aos_core.model.tools.Gun;
+import nl.andrewlalis.aos_core.model.tools.Knife;
 import nl.andrewlalis.aos_core.net.data.tool.GrenadeData;
 import nl.andrewlalis.aos_core.net.data.tool.GunData;
+import nl.andrewlalis.aos_core.net.data.tool.KnifeData;
 import nl.andrewlalis.aos_core.net.data.tool.ToolData;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 /**
  * The data that's sent to all clients about a player, and contains only the
  * information needed to render the player on the screen.
  */
 public class PlayerUpdate {
-	public static final int BYTES = Integer.BYTES + 6 * Float.BYTES + 1;
-
 	private final int id;
 	private final Vec2 position;
 	private final Vec2 orientation;
@@ -30,7 +31,9 @@ public class PlayerUpdate {
 		this.position = player.getPosition();
 		this.orientation = player.getOrientation();
 		this.velocity = player.getVelocity();
-		if (player.getSelectedTool() instanceof Gun gun) {
+		if (player.getSelectedTool() instanceof Knife knife) {
+			this.selectedTool = new KnifeData(knife);
+		} else if (player.getSelectedTool() instanceof Gun gun) {
 			this.selectedTool = new GunData(gun);
 		} else if (player.getSelectedTool() instanceof Grenade grenade) {
 			this.selectedTool = new GrenadeData(grenade);
@@ -39,12 +42,12 @@ public class PlayerUpdate {
 		}
 	}
 
-	public PlayerUpdate(int id, Vec2 position, Vec2 orientation, Vec2 velocity) {
+	public PlayerUpdate(int id, Vec2 position, Vec2 orientation, Vec2 velocity, ToolData selectedTool) {
 		this.id = id;
 		this.position = position;
 		this.orientation = orientation;
 		this.velocity = velocity;
-		this.selectedTool = null;
+		this.selectedTool = selectedTool;
 	}
 
 	public int getId() {
@@ -63,6 +66,10 @@ public class PlayerUpdate {
 		return velocity;
 	}
 
+	public ToolData getSelectedTool() {
+		return selectedTool;
+	}
+
 	public void write(DataOutputStream out) throws IOException {
 		out.writeInt(this.id);
 		out.writeFloat(this.position.x());
@@ -71,6 +78,10 @@ public class PlayerUpdate {
 		out.writeFloat(this.orientation.y());
 		out.writeFloat(this.velocity.x());
 		out.writeFloat(this.velocity.y());
+		out.writeInt(1 + this.selectedTool.getByteSize());
+		ByteBuffer buffer = ByteBuffer.allocate(1 + this.selectedTool.getByteSize());
+		this.selectedTool.write(buffer);
+		out.write(buffer.array());
 	}
 
 	public static PlayerUpdate read(DataInputStream in) throws IOException {
@@ -78,6 +89,9 @@ public class PlayerUpdate {
 		Vec2 position = Vec2.read(in);
 		Vec2 orientation = Vec2.read(in);
 		Vec2 velocity = Vec2.read(in);
-		return new PlayerUpdate(id, position, orientation, velocity, gunTypeName);
+		int toolByteSize = in.readInt();
+		ByteBuffer buffer = ByteBuffer.wrap(in.readNBytes(toolByteSize));
+		ToolData tool = ToolData.read(buffer);
+		return new PlayerUpdate(id, position, orientation, velocity, tool);
 	}
 }

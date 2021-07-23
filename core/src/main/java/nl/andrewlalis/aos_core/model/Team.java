@@ -14,7 +14,7 @@ public class Team implements Serializable {
 
 	private final byte id;
 	private final String name;
-	private final java.awt.Color color;
+	private final Color color;
 	private final Vec2 spawnPoint;
 	private final Vec2 supplyPoint;
 	private final Vec2 orientation;

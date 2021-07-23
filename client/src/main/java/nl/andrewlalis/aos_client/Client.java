@@ -9,14 +9,15 @@ import nl.andrewlalis.aos_client.view.GameRenderer;
 import nl.andrewlalis.aos_core.model.Player;
 import nl.andrewlalis.aos_core.model.Team;
 import nl.andrewlalis.aos_core.model.World;
+import nl.andrewlalis.aos_core.model.tools.Grenade;
 import nl.andrewlalis.aos_core.model.tools.Gun;
-import nl.andrewlalis.aos_core.model.tools.GunType;
-import nl.andrewlalis.aos_core.model.tools.Tool;
+import nl.andrewlalis.aos_core.model.tools.Knife;
 import nl.andrewlalis.aos_core.net.data.DataTypes;
 import nl.andrewlalis.aos_core.net.data.PlayerDetailUpdate;
 import nl.andrewlalis.aos_core.net.data.WorldUpdate;
+import nl.andrewlalis.aos_core.net.data.tool.GrenadeData;
 import nl.andrewlalis.aos_core.net.data.tool.GunData;
-import nl.andrewlalis.aos_core.net.data.tool.ToolData;
+import nl.andrewlalis.aos_core.net.data.tool.KnifeData;
 
 import java.io.IOException;
 
@@ -27,6 +28,7 @@ public class Client {
 	private final MessageTransceiver messageTransceiver;
 
 	private World world;
+	private Player player;
 
 	private final GameRenderer renderer;
 	private final SoundManager soundManager;
@@ -49,7 +51,7 @@ public class Client {
 		this.messageTransceiver.start();
 		this.chatManager.bindTransceiver(this.messageTransceiver);
 
-		while (this.myPlayer == null || this.world == null) {
+		while (this.player == null || this.world == null) {
 			try {
 				System.out.println("Waiting for server response and player registration...");
 				Thread.sleep(100);
@@ -91,10 +93,12 @@ public class Client {
 				player.setPosition(p.getPosition());
 				player.setOrientation(p.getOrientation());
 				player.setVelocity(p.getVelocity());
-				player.setGun(new Gun(this.world.getGunTypes().get(p.getGunTypeName())));
 				if (player.getVelocity().mag() > 0) {
-					this.soundManager.playWalking(player, myPlayer);
+					this.soundManager.playWalking(player, null);
 				}
+				player.getTools().clear();
+				player.getTools().add(p.getSelectedTool().toTool(this.world));
+				player.setSelectedToolIndex(0);
 			}
 		}
 		for (var t : update.getTeamUpdates()) {
@@ -103,7 +107,7 @@ public class Client {
 				team.setScore(t.getScore());
 			}
 		}
-		this.soundManager.play(update.getSoundsToPlay(), myPlayer);
+		this.soundManager.play(update.getSoundsToPlay(), null);
 	}
 
 	public void setWorld(World world) {
@@ -111,11 +115,11 @@ public class Client {
 	}
 
 	public void setPlayer(Player player) {
-		this.myPlayer = player;
+		this.player = player;
 	}
 
 	public Player getPlayer() {
-		return myPlayer;
+		return this.player;
 	}
 
 	/**
@@ -124,17 +128,34 @@ public class Client {
 	 * @param update The updated player information from the server.
 	 */
 	public void updatePlayer(PlayerDetailUpdate update) {
-		if (this.myPlayer == null) return;
-		this.myPlayer.setHealth(update.getHealth());
+		if (this.player != null) {
+			this.player.setHealth(update.getHealth());
+			this.player.getTools().clear();
+			for (var td : update.getTools()) {
+				if (td instanceof KnifeData knifeData) {
+					this.player.getTools().add(new Knife());
+				} else if (td instanceof GunData gunData) {
+					this.player.getTools().add(new Gun(
+							this.world.getGunTypeById(gunData.getTypeId()),
+							gunData.getCurrentClipBulletCount(),
+							gunData.getClipCount(),
+							gunData.isReloading()
+					));
+				} else if (td instanceof GrenadeData grenadeData) {
+					this.player.getTools().add(new Grenade(grenadeData.getGrenades(), grenadeData.getMaxGrenades()));
+				}
+			}
+			this.player.setSelectedToolIndex(update.getSelectedToolIndex());
+		}
 	}
 
 	/**
 	 * Sends a player control state message to the server, which indicates that
 	 * the player's controls have been updated, due to a key or mouse event.
 	 */
-	public void sendPlayerState() {
+	public void sendControlState() {
 		try {
-			this.messageTransceiver.sendData(DataTypes.PLAYER_CONTROL_STATE, myPlayer.getId(), myPlayer.getState().toBytes());
+			this.messageTransceiver.sendData(DataTypes.PLAYER_CONTROL_STATE, this.player.getId(), this.player.getState().toBytes());
 		} catch (IOException e) {
 			e.printStackTrace();
 		}

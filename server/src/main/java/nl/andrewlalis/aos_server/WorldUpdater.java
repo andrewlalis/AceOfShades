@@ -2,6 +2,7 @@ package nl.andrewlalis.aos_server;
 
 import nl.andrewlalis.aos_core.geom.Vec2;
 import nl.andrewlalis.aos_core.model.*;
+import nl.andrewlalis.aos_core.model.tools.Gun;
 import nl.andrewlalis.aos_core.model.tools.GunCategory;
 import nl.andrewlalis.aos_core.net.chat.SystemChatMessage;
 import nl.andrewlalis.aos_core.net.data.SoundData;
@@ -71,7 +72,7 @@ public class WorldUpdater extends Thread {
 	private void updatePlayers(float t) {
 		for (Player p : this.world.getPlayers().values()) {
 			this.updatePlayerMovement(p, t);
-			this.updatePlayerShooting(p);
+			this.updatePlayerInteraction(p);
 			p.setHealth(Math.min(p.getHealth() + server.getSettings().getPlayerSettings().getHealthRegenRate() * t, server.getSettings().getPlayerSettings().getMaxHealth()));
 			this.worldUpdate.addPlayer(p);
 		}
@@ -183,31 +184,38 @@ public class WorldUpdater extends Thread {
 		}
 	}
 
-	private void updatePlayerShooting(Player p) {
-		if (p.canUseGun()) {
-			for (int i = 0; i < p.getGun().getType().bulletsPerRound(); i++) {
-				Bullet b = new Bullet(p, server.getSettings().getPlayerSettings().getSneakAccuracyModifier(), server.getSettings().getPlayerSettings().getSprintAccuracyModifier());
-				this.world.getBullets().add(b);
-				this.worldUpdate.addBullet(b);
-			}
-			SoundType soundType = SoundType.SHOT_SMG;
-			if (p.getGun().getType().category() == GunCategory.RIFLE) {
-				soundType = SoundType.SHOT_RIFLE;
-			} else if (p.getGun().getType().category() == GunCategory.SHOTGUN) {
-				soundType = SoundType.SHOT_SHOTGUN;
-			} else if (p.getGun().getType().category() == GunCategory.MACHINE) {
-				soundType = ThreadLocalRandom.current().nextFloat() < 0.8f ? SoundType.SHOT_MACHINE_GUN_1 : SoundType.SHOT_MACHINE_GUN_2;
-			}
-			this.worldUpdate.addSound(new SoundData(p.getPosition(), 1.0f, soundType));
-			p.useWeapon();
-			p.setVelocity(p.getVelocity().add(p.getOrientation().mul(-1 * p.getGun().getType().recoil())));
+	private void updatePlayerInteraction(Player p) {
+		if ((p.getState().isSelectingNextTool() ^ p.getState().isSelectingPreviousTool()) && p.canChangeSelectedTool()) {
+			if (p.getState().isSelectingNextTool()) p.selectNextTool();
+			if (p.getState().isSelectingPreviousTool()) p.selectPreviousTool();
+			return; // Don't immediately do any action with the newly-selected tool.
 		}
-		if (p.getState().isReloading() && !p.isReloading() && p.getGun().canReload()) {
-			p.startReloading();
-		}
-		if (p.isReloading() && p.isReloadingComplete()) {
-			p.finishReloading();
-			this.worldUpdate.addSound(new SoundData(p.getPosition(), 1.0f, SoundType.RELOAD));
+		if (p.getSelectedTool() instanceof Gun gun) {
+			if (p.canUseGun()) {
+				for (int i = 0; i < gun.getType().bulletsPerRound(); i++) {
+					Bullet b = new Bullet(p, gun, server.getSettings().getPlayerSettings().getSneakAccuracyModifier(), server.getSettings().getPlayerSettings().getSprintAccuracyModifier());
+					this.world.getBullets().add(b);
+					this.worldUpdate.addBullet(b);
+				}
+				SoundType soundType = SoundType.SHOT_SMG;
+				if (gun.getType().category() == GunCategory.RIFLE) {
+					soundType = SoundType.SHOT_RIFLE;
+				} else if (gun.getType().category() == GunCategory.SHOTGUN) {
+					soundType = SoundType.SHOT_SHOTGUN;
+				} else if (gun.getType().category() == GunCategory.MACHINE) {
+					soundType = ThreadLocalRandom.current().nextFloat() < 0.8f ? SoundType.SHOT_MACHINE_GUN_1 : SoundType.SHOT_MACHINE_GUN_2;
+				}
+				this.worldUpdate.addSound(new SoundData(p.getPosition(), 1.0f, soundType));
+				gun.use();
+				p.setVelocity(p.getVelocity().add(p.getOrientation().mul(-1 * gun.getType().recoil())));
+			}
+			if (p.getState().isReloading() && !gun.isReloading() && gun.canReload()) {
+				gun.startReloading();
+			}
+			if (gun.isReloading() && gun.isReloadingComplete()) {
+				gun.reload();
+				this.worldUpdate.addSound(new SoundData(p.getPosition(), 1.0f, SoundType.RELOAD));
+			}
 		}
 	}
 
@@ -261,12 +269,10 @@ public class WorldUpdater extends Thread {
 						Player shooter = this.world.getPlayers().get(b.getPlayerId());
 						this.server.broadcastMessage(new SystemChatMessage(SystemChatMessage.Level.SEVERE, p.getName() + " was shot by " + shooter.getName() + "."));
 						this.worldUpdate.addSound(new SoundData(p.getPosition(), 1.0f, SoundType.DEATH));
-						shooter.incrementKillCount();
 						if (shooter.getTeam() != null) {
 							shooter.getTeam().incrementScore();
 							this.worldUpdate.addTeam(shooter.getTeam());
 						}
-						p.incrementDeathCount();
 						p.respawn(server.getSettings().getPlayerSettings().getMaxHealth());
 					}
 				}

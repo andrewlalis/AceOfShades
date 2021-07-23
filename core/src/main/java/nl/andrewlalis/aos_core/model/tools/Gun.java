@@ -19,16 +19,17 @@ public class Gun implements Tool {
 	private transient long reloadingStartedAt;
 	private boolean reloading;
 
-	public Gun(GunType type, int currentClipBulletCount, int clipCount) {
+	public Gun(GunType type, int currentClipBulletCount, int clipCount, boolean reloading) {
 		this.type = type;
 		this.currentClipBulletCount = currentClipBulletCount;
 		this.clipCount = clipCount;
+		this.reloading = reloading;
 
 		this.lastShot = System.currentTimeMillis();
 	}
 
 	public Gun(GunType type) {
-		this(type, 0, type.maxClipCount());
+		this(type, 0, type.maxClipCount(), false);
 	}
 
 	public GunType getType() {
@@ -76,6 +77,14 @@ public class Gun implements Tool {
 		this.reloading = false;
 	}
 
+	/**
+	 * @return The name of the tool, as it should be shown to the players.
+	 */
+	@Override
+	public String getName() {
+		return this.getType().name();
+	}
+
 	@Override
 	public void use() {
 		this.lastShot = System.currentTimeMillis();
@@ -91,6 +100,15 @@ public class Gun implements Tool {
 	public boolean isUsable() {
 		return !this.reloading &&
 				this.currentClipBulletCount > 0 &&
-				this.lastShot + (this.type.shotCooldownTime() * 1000) < System.currentTimeMillis();
+				(this.lastShot + (long) (this.type.shotCooldownTime() * 1000)) < System.currentTimeMillis();
+	}
+
+	@Override
+	public void reset() {
+		this.reloading = false;
+		this.currentClipBulletCount = this.type.clipSize();
+		this.clipCount = this.type.maxClipCount();
+		this.lastShot = 0;
+		this.reloadingStartedAt = 0;
 	}
 }
